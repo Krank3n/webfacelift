@@ -226,6 +226,18 @@ If a === DESIGN GUIDE FROM SENIOR DESIGNER === section is included in the user m
 - For water-sports niche: you MUST populate whyChooseUs (4-6 items), pricingCategories (grouped tiers), combos (if any bundle deals exist), specialSessions (if any events/sessions exist), and all URL fields (heroVideoUrl, giftCardsUrl, proShopUrl, socialLinks)
 - The design guide represents the creative direction from a senior designer — treat it as authoritative
 
+NICHE TEMPLATE IMAGE MAPPING (CRITICAL):
+When generating a niche template response, you MUST map images from the content brief's imageCatalog into the nicheData fields:
+- imageCatalog entry with recommendedPlacement "hero" (priority 1) → nicheData.heroImage
+- imageCatalog entry with recommendedPlacement "logo" → nicheData.logo
+- imageCatalog entries with recommendedPlacement "gallery" → nicheData.gallery[].url
+- imageCatalog entries with recommendedPlacement "content-split" → nicheData.custom.activities[].image (assign each activity an image)
+- If there are more images than activities, add extras to the gallery
+- NEVER fabricate image URLs. Only use URLs that appear in the imageCatalog.
+- If the imageCatalog has 5+ images, the gallery MUST have at least 4-6 images.
+- If the imageCatalog has a logo URL, it MUST go into nicheData.logo.
+- Every real content image from the imageCatalog should appear somewhere in nicheData — do NOT waste scraped images.
+
 ${NICHE_DATA_SCHEMA}`;
 
 export const CHAT_ITERATE_SYSTEM_PROMPT = `You are an expert web designer AI that modifies website blueprints based on user requests. You act as a strict JSON state machine.
