@@ -2,6 +2,7 @@
 
 import { useProjectStore } from "@/store/project-store";
 import Renderer from "@/components/builder/Renderer";
+import IframePreview from "./IframePreview";
 import { Monitor, Tablet, Smartphone } from "lucide-react";
 
 const viewportWidths = {
@@ -40,19 +41,17 @@ export default function PreviewCanvas() {
         ))}
       </div>
 
-      {/* Canvas container */}
-      <div className="flex-1 overflow-auto p-6 pt-14 bg-zinc-950/50">
+      {/* Canvas container — no overflow, iframe scrolls internally */}
+      <div className="flex-1 flex flex-col p-6 pt-14 bg-zinc-950/50 min-h-0">
         <div
-          className="mx-auto transition-all duration-300 ease-out rounded-xl overflow-hidden bg-zinc-900 border border-white/[0.06] shadow-2xl shadow-black/50"
+          className="mx-auto flex-1 min-h-0 transition-all duration-300 ease-out rounded-xl overflow-hidden bg-zinc-900 border border-white/[0.06] shadow-2xl shadow-black/50"
           style={{
             width: viewportWidths[viewportMode],
             maxWidth: "100%",
-            minHeight: "80vh",
-            transform: "translateZ(0)",
           }}
         >
           {isGenerating ? (
-            <div className="flex items-center justify-center h-[80vh]">
+            <div className="flex items-center justify-center h-full">
               <div className="text-center">
                 <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center mx-auto mb-3 animate-pulse">
                   <div className="w-3 h-3 rounded-full bg-indigo-400" />
@@ -63,9 +62,11 @@ export default function PreviewCanvas() {
               </div>
             </div>
           ) : blueprint ? (
-            <Renderer blueprint={blueprint} />
+            <IframePreview>
+              <Renderer blueprint={blueprint} />
+            </IframePreview>
           ) : (
-            <div className="flex items-center justify-center h-[80vh]">
+            <div className="flex items-center justify-center h-full">
               <p className="text-sm text-white/20">
                 No blueprint loaded
               </p>
