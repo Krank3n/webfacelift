@@ -1,8 +1,10 @@
 "use client";
 
+import { useRef, useEffect } from "react";
 import type { BlueprintState, BlueprintBlock, TemplateStyle } from "@/types/blueprint";
 import { useProjectStore } from "@/store/project-store";
 import { getNicheTemplate } from "@/components/niche/registry";
+import { EditPathProvider } from "./EditableText";
 import Hero from "./Hero";
 import ServiceGrid from "./ServiceGrid";
 import ContentSplit from "./ContentSplit";
@@ -16,6 +18,51 @@ import Gallery from "./Gallery";
 import FAQ from "./FAQ";
 import TeamGrid from "./TeamGrid";
 import LogoBar from "./LogoBar";
+
+/**
+ * Dynamically loads a Google Font by injecting a <link> stylesheet into the
+ * ownerDocument (works inside iframes). Cleans up on unmount or font change.
+ */
+function GoogleFontLoader({ font }: { font?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!font) return;
+
+    const doc = ref.current?.ownerDocument;
+    if (!doc) return;
+
+    const id = `gfont-${font.replace(/\s+/g, "-")}`;
+    if (doc.getElementById(id)) return;
+
+    // Preconnect for faster font loading
+    for (const href of [
+      "https://fonts.googleapis.com",
+      "https://fonts.gstatic.com",
+    ]) {
+      if (!doc.querySelector(`link[rel="preconnect"][href="${href}"]`)) {
+        const pc = doc.createElement("link");
+        pc.rel = "preconnect";
+        pc.href = href;
+        if (href.includes("gstatic")) pc.crossOrigin = "anonymous";
+        pc.setAttribute("data-gfont", "");
+        doc.head.appendChild(pc);
+      }
+    }
+
+    const link = doc.createElement("link");
+    link.id = id;
+    link.rel = "stylesheet";
+    link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(font)}:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&display=swap`;
+    doc.head.appendChild(link);
+
+    return () => {
+      doc.getElementById(id)?.remove();
+    };
+  }, [font]);
+
+  return <div ref={ref} style={{ display: "none" }} />;
+}
 
 /**
  * Returns the relative luminance of a hex color (0 = black, 1 = white).
@@ -61,6 +108,22 @@ function getAutoTextColor(
   return undefined;
 }
 
+/** Map block types to the anchor slugs commonly used in navbar hrefs. */
+const typeToSlug: Record<string, string> = {
+  hero: "hero",
+  serviceGrid: "services",
+  contentSplit: "about",
+  contactCTA: "contact",
+  testimonials: "testimonials",
+  pricingGrid: "pricing",
+  statsBar: "stats",
+  gallery: "gallery",
+  faq: "faq",
+  teamGrid: "team",
+  logoBar: "partners",
+  footer: "footer",
+};
+
 const componentRegistry: Record<
   string,
   React.ComponentType<{ block: never; template: TemplateStyle }>
@@ -83,19 +146,23 @@ const componentRegistry: Record<
 function BlockWrapper({
   block,
   index,
+  sectionId,
   template,
   globalBg,
   globalText,
 }: {
   block: BlueprintBlock;
   index: number;
+  sectionId?: string;
   template: TemplateStyle;
   globalBg: string;
   globalText: string;
 }) {
+  const previewMode = useProjectStore((s) => s.previewMode);
   const hoveredBlockIndex = useProjectStore((s) => s.hoveredBlockIndex);
   const setHoveredBlockIndex = useProjectStore((s) => s.setHoveredBlockIndex);
   const Component = componentRegistry[block.type];
+  const isEditing = previewMode === "edit";
 
   if (!Component) {
     return (
@@ -105,7 +172,7 @@ function BlockWrapper({
     );
   }
 
-  const isHovered = hoveredBlockIndex === index;
+  const isHovered = isEditing && hoveredBlockIndex === index;
 
   // Auto-correct text color when block bgColor conflicts with global text color
   const blockBg = (block as { bgColor?: string }).bgColor;
@@ -113,10 +180,11 @@ function BlockWrapper({
 
   return (
     <div
+      id={sectionId}
       className="relative group"
       style={autoText ? { color: autoText } : undefined}
-      onMouseEnter={() => setHoveredBlockIndex(index)}
-      onMouseLeave={() => setHoveredBlockIndex(null)}
+      onMouseEnter={isEditing ? () => setHoveredBlockIndex(index) : undefined}
+      onMouseLeave={isEditing ? () => setHoveredBlockIndex(null) : undefined}
     >
       {isHovered && (
         <div className="absolute inset-0 border border-dashed border-indigo-400/50 rounded-lg z-20 pointer-events-none">
@@ -125,7 +193,9 @@ function BlockWrapper({
           </span>
         </div>
       )}
-      <Component block={block as never} template={template} />
+      <EditPathProvider prefix={`layout.${index}`}>
+        <Component block={block as never} template={template} />
+      </EditPathProvider>
     </div>
   );
 }
@@ -144,7 +214,10 @@ export default function Renderer({
           className="min-h-full"
           style={{ fontFamily: blueprint.font || "inherit" }}
         >
-          <NicheComponent data={blueprint.nicheData} />
+          <GoogleFontLoader font={blueprint.font} />
+          <EditPathProvider prefix="nicheData">
+            <NicheComponent data={blueprint.nicheData} />
+          </EditPathProvider>
         </div>
       );
     }
@@ -171,16 +244,33 @@ export default function Renderer({
         fontFamily: blueprint.font || "inherit",
       }}
     >
-      {blueprint.layout.map((block, index) => (
-        <BlockWrapper
-          key={`${block.type}-${index}`}
-          block={block}
-          index={index}
-          template={template}
-          globalBg={blueprint.colorScheme?.background || "#0a0a0a"}
-          globalText={blueprint.colorScheme?.text || "#ffffff"}
-        />
-      ))}
+      <GoogleFontLoader font={blueprint.font} />
+      {(() => {
+        const slugCounts: Record<string, number> = {};
+        return blueprint.layout.map((block, index) => {
+          // Use explicit sectionId if present, otherwise auto-generate from block type
+          const explicitId = (block as { sectionId?: string }).sectionId;
+          let sectionId: string | undefined;
+          if (explicitId) {
+            sectionId = explicitId;
+          } else if (block.type !== "navbar") {
+            const base = typeToSlug[block.type] || block.type;
+            const count = (slugCounts[base] = (slugCounts[base] || 0) + 1);
+            sectionId = count === 1 ? base : `${base}-${count}`;
+          }
+          return (
+            <BlockWrapper
+              key={`${block.type}-${index}`}
+              block={block}
+              index={index}
+              sectionId={sectionId}
+              template={template}
+              globalBg={blueprint.colorScheme?.background || "#0a0a0a"}
+              globalText={blueprint.colorScheme?.text || "#ffffff"}
+            />
+          );
+        });
+      })()}
     </div>
   );
 }

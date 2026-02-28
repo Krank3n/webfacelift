@@ -9,6 +9,7 @@ import {
   Truck, Leaf, Camera, Code, Palette, HelpCircle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import EditableText from "./EditableText";
 
 const iconMap: Record<string, LucideIcon> = {
   briefcase: Briefcase, shield: Shield, zap: Zap, heart: Heart,
@@ -40,11 +41,11 @@ export default function ServiceGrid({ block, template }: { block: ServiceGridBlo
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
-            {block.title}
+            <EditableText field="title">{block.title}</EditableText>
           </h2>
           {block.subtitle && (
             <p className="mt-4 text-lg opacity-60 max-w-2xl mx-auto">
-              {block.subtitle}
+              <EditableText field="subtitle">{block.subtitle}</EditableText>
             </p>
           )}
         </div>
@@ -61,10 +62,10 @@ export default function ServiceGrid({ block, template }: { block: ServiceGridBlo
                   <Icon size={20} className="opacity-80 group-hover:scale-110 transition-transform duration-300" />
                 </div>
                 <h3 className="text-lg font-semibold mb-2">
-                  {service.title}
+                  <EditableText field={`services.${i}.title`}>{service.title}</EditableText>
                 </h3>
                 <p className="text-sm opacity-60 leading-relaxed">
-                  {service.description}
+                  <EditableText field={`services.${i}.description`} multiline>{service.description}</EditableText>
                 </p>
               </div>
             );

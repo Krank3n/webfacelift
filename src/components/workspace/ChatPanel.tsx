@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useProjectStore } from "@/store/project-store";
 import { syncDemoToSession } from "@/store/project-store";
+import { getBlueprintPages } from "@/lib/blueprint-utils";
 import { chatIterate } from "@/actions/chatIterate";
 import { updateProjectState } from "@/actions/projects";
 import type { ChatMessage } from "@/types/blueprint";
-import { Send, Loader2, Bot, User, Sparkles } from "lucide-react";
+import { Send, Loader2, Bot, User, Sparkles, FileText } from "lucide-react";
 
 export default function ChatPanel() {
   const [input, setInput] = useState("");
@@ -20,6 +21,14 @@ export default function ChatPanel() {
   const isChatLoading = useProjectStore((s) => s.isChatLoading);
   const setIsChatLoading = useProjectStore((s) => s.setIsChatLoading);
   const uploadedImages = useProjectStore((s) => s.uploadedImages);
+  const activePageId = useProjectStore((s) => s.activePageId);
+
+  const activePageName = useMemo(() => {
+    if (!blueprint) return "Home";
+    const pages = getBlueprintPages(blueprint);
+    const page = (activePageId ? pages.find((p) => p.id === activePageId) : null) ?? pages[0];
+    return page?.name ?? "Home";
+  }, [blueprint, activePageId]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({
@@ -158,6 +167,12 @@ export default function ChatPanel() {
 
       {/* Input */}
       <div className="px-4 py-3 border-t border-white/[0.06]">
+        <div className="flex items-center gap-1.5 px-1 mb-1.5">
+          <FileText size={10} className="text-white/20" />
+          <span className="text-[11px] text-white/30">
+            Editing: <span className="text-white/50">{activePageName}</span>
+          </span>
+        </div>
         <div className="flex items-center gap-2 p-1 rounded-lg bg-zinc-900 border border-white/10 focus-within:border-indigo-500/50 transition-colors">
           <input
             type="text"

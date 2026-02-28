@@ -145,7 +145,7 @@ SCHEMA (Block Layout mode):
   "font": string (optional, e.g. "Inter", "Geist"),
   "template": "glass" | "bold" | "minimal" | "vibrant",
   "layout": [
-    // NAVBAR
+    // NAVBAR — href values MUST use these anchors: #services, #about, #contact, #testimonials, #pricing, #stats, #gallery, #faq, #team, #partners
     { "type": "navbar", "brand": string, "links": [{"label": string, "href": string}], "ctaText": string (optional), "bgColor": string (optional) }
 
     // HERO
@@ -260,7 +260,9 @@ If the state has "nicheTemplate" and "nicheData" fields (and "layout" is empty [
 - This is a niche-specific template. Edits should modify the "nicheData" object.
 - You can change: businessName, tagline, description, colorScheme, stats, testimonials, gallery, pricing, faq, team, cta, navLinks, hours, and the "custom" object fields.
 - For water-sports niche, the custom object supports: activities, bookingUrl, parkStatus (with timezone), heroVideoUrl, secondaryVideoUrl, giftCardsUrl, proShopUrl, socialLinks, whyChooseUs (icon/title/description features), pricingCategories (multi-tier grouped pricing), combos (bundle deals with adult/child prices), specialSessions (name/day/time).
+- For lists niche, the custom object supports: categories (name/slug/icon/count/description), items (name/description/category/url/image/tags/rating/featured/meta), submitUrl, totalCount, lastUpdated, searchPlaceholder, sponsoredItems (name/description/url/image/badge).
 - When the user asks to change pricing: modify pricingCategories and/or combos in custom. When asked about videos: modify heroVideoUrl/secondaryVideoUrl. When asked about features/benefits: modify whyChooseUs. When asked about sessions/events: modify specialSessions.
+- For lists niche: when asked to add/remove/edit listings: modify items in custom. When asked about categories: modify categories. When asked about search: modify searchPlaceholder. When asked about submissions: modify submitUrl. When asked about featured/sponsored: modify sponsoredItems.
 - Keep "layout" as an empty array. Keep "nicheTemplate" unchanged unless the user asks to switch niches.
 - If the user asks to "switch to blocks" or "use standard layout", convert to block mode: clear nicheTemplate and nicheData, populate layout with blocks.
 

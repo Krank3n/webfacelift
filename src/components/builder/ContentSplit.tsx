@@ -5,6 +5,8 @@ import { getTemplateStyles } from "@/lib/templates";
 import { cn } from "@/lib/utils";
 import { ArrowRight } from "lucide-react";
 import Image from "next/image";
+import EditableText from "./EditableText";
+import EditableImage from "./EditableImage";
 
 const placeholderGradients: Record<TemplateStyle, string> = {
   glass: "from-indigo-500/20 to-violet-500/20",
@@ -37,10 +39,10 @@ export default function ContentSplit({ block, template }: { block: ContentSplitB
         {/* Text side */}
         <div className={isLeft ? "" : "md:[direction:ltr]"}>
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight leading-tight">
-            {block.heading}
+            <EditableText field="heading">{block.heading}</EditableText>
           </h2>
           <p className="mt-4 opacity-60 leading-relaxed text-base md:text-lg">
-            {block.body}
+            <EditableText field="body" multiline>{block.body}</EditableText>
           </p>
           {block.ctaText && (
             <a
@@ -50,7 +52,7 @@ export default function ContentSplit({ block, template }: { block: ContentSplitB
                 t.buttonPrimary
               )}
             >
-              {block.ctaText}
+              <EditableText field="ctaText">{block.ctaText}</EditableText>
               <ArrowRight size={16} />
             </a>
           )}
@@ -67,6 +69,7 @@ export default function ContentSplit({ block, template }: { block: ContentSplitB
                 className="object-cover hover:scale-[1.02] transition-transform duration-500"
                 unoptimized
               />
+              <EditableImage field="image" currentSrc={block.image} />
             </div>
           ) : (
             <div className={cn(

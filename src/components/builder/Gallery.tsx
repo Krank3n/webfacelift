@@ -3,6 +3,8 @@
 import type { GalleryBlock, TemplateStyle } from "@/types/blueprint";
 import { getTemplateStyles } from "@/lib/templates";
 import Image from "next/image";
+import EditableText from "./EditableText";
+import EditableImage from "./EditableImage";
 
 export default function Gallery({ block, template }: { block: GalleryBlock; template: TemplateStyle }) {
   const t = getTemplateStyles(template);
@@ -24,12 +26,12 @@ export default function Gallery({ block, template }: { block: GalleryBlock; temp
           <div className="text-center mb-12">
             {block.title && (
               <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
-                {block.title}
+                <EditableText field="title">{block.title}</EditableText>
               </h2>
             )}
             {block.subtitle && (
               <p className="mt-4 text-lg opacity-60 max-w-2xl mx-auto">
-                {block.subtitle}
+                <EditableText field="subtitle">{block.subtitle}</EditableText>
               </p>
             )}
           </div>
@@ -47,6 +49,7 @@ export default function Gallery({ block, template }: { block: GalleryBlock; temp
                 className="object-cover transition-transform duration-500 group-hover:scale-110"
                 unoptimized
               />
+              <EditableImage field={`images.${i}.url`} currentSrc={img.url} />
             </div>
           ))}
         </div>

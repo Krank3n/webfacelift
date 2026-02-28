@@ -4,6 +4,7 @@ import type { ContactCTABlock, TemplateStyle } from "@/types/blueprint";
 import { getTemplateStyles } from "@/lib/templates";
 import { cn } from "@/lib/utils";
 import { Send } from "lucide-react";
+import EditableText from "./EditableText";
 
 export default function ContactCTA({ block, template }: { block: ContactCTABlock; template: TemplateStyle }) {
   const t = getTemplateStyles(template);
@@ -16,10 +17,12 @@ export default function ContactCTA({ block, template }: { block: ContactCTABlock
     >
       <div className="max-w-3xl mx-auto text-center">
         <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
-          {block.heading}
+          <EditableText field="heading">{block.heading}</EditableText>
         </h2>
         {block.subheading && (
-          <p className="mt-4 text-lg opacity-60">{block.subheading}</p>
+          <p className="mt-4 text-lg opacity-60">
+            <EditableText field="subheading">{block.subheading}</EditableText>
+          </p>
         )}
 
         {block.showForm ? (
@@ -61,7 +64,7 @@ export default function ContactCTA({ block, template }: { block: ContactCTABlock
                   t.buttonPrimary
                 )}
               >
-                {block.buttonText || "Send Message"}
+                <EditableText field="buttonText">{block.buttonText || "Send Message"}</EditableText>
                 <Send size={16} />
               </button>
             </form>
@@ -73,7 +76,7 @@ export default function ContactCTA({ block, template }: { block: ContactCTABlock
               t.buttonPrimary
             )}
           >
-            {block.buttonText || "Get In Touch"}
+            <EditableText field="buttonText">{block.buttonText || "Get In Touch"}</EditableText>
             <Send size={16} />
           </button>
         )}

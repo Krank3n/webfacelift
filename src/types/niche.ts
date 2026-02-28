@@ -2,7 +2,8 @@ export type NicheCategory =
   | "water-sports"
   | "restaurant"
   | "fitness"
-  | "professional-services";
+  | "professional-services"
+  | "lists";
 
 // Per-niche custom data types
 
@@ -51,6 +52,38 @@ export interface WaterSportsCustom {
     name: string;
     day: string;
     time: string;
+  }[];
+}
+
+export interface ListsCustom {
+  categories: {
+    name: string;
+    slug: string;
+    icon?: string;
+    count?: number;
+    description?: string;
+  }[];
+  items: {
+    name: string;
+    description: string;
+    category: string;
+    url?: string;
+    image?: string;
+    tags?: string[];
+    rating?: number;
+    featured?: boolean;
+    meta?: Record<string, string>;
+  }[];
+  submitUrl?: string;
+  totalCount?: string;
+  lastUpdated?: string;
+  searchPlaceholder?: string;
+  sponsoredItems?: {
+    name: string;
+    description: string;
+    url?: string;
+    image?: string;
+    badge?: string;
   }[];
 }
 
@@ -103,5 +136,5 @@ export interface NicheBusinessData {
   };
   navLinks?: { label: string; href: string }[];
   socialLinks?: { platform: string; url: string }[];
-  custom?: WaterSportsCustom | Record<string, unknown>;
+  custom?: WaterSportsCustom | ListsCustom | Record<string, unknown>;
 }

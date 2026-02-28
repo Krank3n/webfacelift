@@ -152,6 +152,15 @@ export type BlueprintBlock =
   | TeamGridBlock
   | LogoBarBlock;
 
+export interface BlueprintPage {
+  id: string;
+  name: string;
+  slug: string;
+  layout: BlueprintBlock[];
+  nicheTemplate?: NicheCategory;
+  nicheData?: NicheBusinessData;
+}
+
 export interface BlueprintState {
   siteName: string;
   colorScheme: {
@@ -166,6 +175,7 @@ export interface BlueprintState {
   layout: BlueprintBlock[];
   nicheTemplate?: NicheCategory;
   nicheData?: NicheBusinessData;
+  pages?: BlueprintPage[];
 }
 
 export interface ChatMessage {

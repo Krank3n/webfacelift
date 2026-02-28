@@ -5,10 +5,13 @@ Before generating a standard block layout, analyze the scraped content to determ
 SUPPORTED NICHES:
 1. "water-sports" — Wake parks, surf schools, kayak rentals, jet ski, paddleboarding, water sports centers, boat tours
    Signals: words like "wakeboard", "surf", "kayak", "paddle", "boat", "lake", "wave", "swim", "aqua", "water park", "jet ski", booking systems, activity listings with difficulty levels
+2. "lists" — Directories, catalogs, curated lists, resource collections, business listings, comparison sites
+   Signals: repeated item cards/rows, category navigation, search/filter UI, "browse", "directory", "listings",
+   "catalog", numbered/bulleted collections, "submit a listing", rating systems, large item counts
 
 DECISION RULES:
-- If you are CONFIDENT the business matches the water-sports niche above, output a niche template response.
-- For ALL other business types, use the standard block layout. Do NOT attempt niche templates for restaurants, fitness, professional services, or any other category — only water-sports has a dedicated template.
+- If you are CONFIDENT the business matches one of the supported niches above (water-sports or lists), output a niche template response.
+- For ALL other business types, use the standard block layout. Do NOT attempt niche templates for restaurants, fitness, professional services, or any other category — only water-sports and lists have dedicated templates.
 - When in doubt, prefer block layout.
 - A niche template response has: nicheTemplate (the niche string), nicheData (the rich business data), and layout: [] (empty array).
 - A standard block response has: nicheTemplate absent, nicheData absent, and layout: [...blocks...] (non-empty).
@@ -21,7 +24,7 @@ When outputting a niche template, the JSON must include:
   "font": string,
   "template": string,
   "layout": [],
-  "nicheTemplate": "water-sports",
+  "nicheTemplate": "water-sports" | "lists",
   "nicheData": { ... NicheBusinessData ... }
 }
 `;
@@ -85,7 +88,29 @@ WATER-SPORTS EXTRACTION RULES (CRITICAL):
 - Generate a "whyChooseUs" list of 4-6 compelling features/benefits from the content (e.g. "Beginner Friendly", "All Equipment Included").
 - Extract any special sessions or events (ladies nights, kids sessions, etc.) into specialSessions.
 
+For "lists" custom:
+{
+  "categories": [{ "name": string, "slug": string, "icon": string (Lucide icon name), "count": number, "description": string }],
+  "items": [{ "name": string, "description": string, "category": string (matches categories[].slug), "url": string, "image": string, "tags": [string], "rating": number (1-5), "featured": boolean, "meta": { key: value } }],
+  "submitUrl": string (optional — URL for "Submit a listing" page),
+  "totalCount": string (optional — e.g. "500+ listings"),
+  "lastUpdated": string (optional — e.g. "Updated weekly"),
+  "searchPlaceholder": string (optional — e.g. "Search restaurants..."),
+  "sponsoredItems": [{ "name": string, "description": string, "url": string, "image": string, "badge": string (e.g. "Sponsored", "Premium") }] (optional)
+}
+
+LISTS EXTRACTION RULES (CRITICAL):
+- Extract ALL list items with their names, descriptions, categories, and any metadata
+- Organize items into logical categories derived from the site's navigation or groupings
+- Extract URLs for each item if they link to external pages
+- Use scraped images for item thumbnails where available
+- Extract ratings if the site has a rating system
+- Mark items as featured if they have visual prominence on the original site
+- For meta fields, extract any structured data (location, price, date, type, etc.)
+- Generate a searchPlaceholder that matches the site's content type (e.g. "Search restaurants...", "Find tools...")
+
 COLOR PALETTE GUIDELINES:
 - water-sports: deep blues (#0c1e3a), cyans (#00bcd4), teal (#009688), white text
+- lists: light neutrals (white #ffffff, gray-50 #f9fafb), primary accent from site's brand colors
 - For all other sites using block layout: extract real brand colors from the scraped site content
 `;

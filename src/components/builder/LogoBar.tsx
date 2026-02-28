@@ -2,6 +2,8 @@
 
 import type { LogoBarBlock, TemplateStyle } from "@/types/blueprint";
 import Image from "next/image";
+import EditableText from "./EditableText";
+import EditableImage from "./EditableImage";
 
 export default function LogoBar({ block }: { block: LogoBarBlock; template: TemplateStyle }) {
   return (
@@ -12,7 +14,7 @@ export default function LogoBar({ block }: { block: LogoBarBlock; template: Temp
       <div className="max-w-6xl mx-auto">
         {block.title && (
           <p className="text-center text-sm font-medium opacity-40 uppercase tracking-wider mb-8">
-            {block.title}
+            <EditableText field="title">{block.title}</EditableText>
           </p>
         )}
         <div className="flex flex-wrap justify-center items-center gap-8 md:gap-12">
@@ -28,6 +30,7 @@ export default function LogoBar({ block }: { block: LogoBarBlock; template: Temp
                 className="object-contain"
                 unoptimized
               />
+              <EditableImage field={`logos.${i}.url`} currentSrc={logo.url} />
             </div>
           ))}
         </div>

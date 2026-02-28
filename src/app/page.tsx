@@ -36,6 +36,11 @@ export default function LandingPage() {
       {/* Gradient orbs */}
       <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-violet-600/10 rounded-full blur-[120px] pointer-events-none" />
+      {/* Ambient depth glow behind hero */}
+      <div
+        className="absolute top-[15%] left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full blur-[80px] pointer-events-none"
+        style={{ background: "radial-gradient(ellipse at center, rgba(99,102,241,0.08) 0%, rgba(139,92,246,0.03) 50%, transparent 80%)" }}
+      />
 
       {/* Nav */}
       <nav className="relative z-10 flex items-center justify-between px-6 md:px-12 py-5">
@@ -70,12 +75,12 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="relative z-10 max-w-5xl mx-auto px-6 pt-20 md:pt-32 pb-20 text-center">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-xs text-indigo-300 mb-8">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/15 border border-indigo-500/30 text-xs text-indigo-300 mb-8">
           <Sparkles size={12} />
           AI-Powered Website Reconstruction
         </div>
 
-        <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight text-white leading-[0.95]">
+        <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight text-white leading-[1.1]">
           More than a facelift.
           <br />
           <span className="bg-gradient-to-r from-indigo-400 via-violet-400 to-purple-400 bg-clip-text text-transparent">
@@ -85,15 +90,15 @@ export default function LandingPage() {
           the bones.
         </h1>
 
-        <p className="mt-8 text-lg md:text-xl text-white/50 max-w-2xl mx-auto leading-relaxed">
+        <p className="mt-5 text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed">
           Paste any outdated website URL. Our AI scrapes the content, redesigns
           the entire structure, and renders a modern blueprint you can iterate
           on in real-time.
         </p>
 
         {/* URL Input */}
-        <div className="mt-12 max-w-2xl mx-auto">
-          <div className="flex items-center gap-2 p-2 rounded-xl bg-zinc-900 border border-white/10 focus-within:border-indigo-500/50 transition-colors">
+        <div className="mt-14 max-w-2xl mx-auto">
+          <div className="flex items-center gap-2 p-2 rounded-xl bg-zinc-900/80 border border-white/[0.12] shadow-[inset_0_1px_1px_rgba(255,255,255,0.04)] focus-within:border-indigo-500/50 transition-colors">
             <div className="flex items-center gap-2 pl-3 text-white/30">
               <Globe size={18} />
             </div>
@@ -103,13 +108,13 @@ export default function LandingPage() {
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleStart()}
-              className="flex-1 bg-transparent text-white text-sm placeholder:text-white/30 outline-none py-2"
+              className="flex-1 bg-transparent text-white text-sm placeholder:text-white/[0.35] outline-none py-2"
             />
             <button
               onClick={handleStart}
-              className="px-5 py-2.5 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-sm font-semibold flex items-center gap-2 transition-all"
+              className="shrink-0 px-3 md:px-5 py-2.5 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 hover:shadow-[0_0_20px_rgba(99,102,241,0.3)] text-white text-sm font-semibold flex items-center gap-2 transition-all"
             >
-              Reconstruct
+              <span className="hidden md:inline">Reconstruct</span>
               <ArrowRight size={14} />
             </button>
           </div>
@@ -242,7 +247,7 @@ export default function LandingPage() {
               input?.focus();
               window.scrollTo({ top: 0, behavior: "smooth" });
             }}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold text-sm transition-all"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 hover:shadow-[0_0_20px_rgba(99,102,241,0.3)] text-white font-semibold text-sm transition-all"
           >
             Try it now
             <ChevronRight size={16} />

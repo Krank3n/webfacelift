@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import type { NicheBusinessData, WaterSportsCustom } from "@/types/niche";
 import { useInView } from "../hooks/useInView";
 import { useCountUp } from "../hooks/useCountUp";
+import EditableText from "@/components/builder/EditableText";
 
 /* ------------------------------------------------------------------ */
 /*  Water wave SVG divider                                             */
@@ -405,7 +406,7 @@ export default function WaterSportsTemplate({
                   />
                 ) : (
                   <span className="text-xl font-black tracking-tight">
-                    {data.businessName}
+                    <EditableText field="businessName">{data.businessName}</EditableText>
                   </span>
                 )}
               </a>
@@ -556,14 +557,16 @@ export default function WaterSportsTemplate({
 
               {/* Main heading */}
               <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black leading-[0.9] mb-6 tracking-tight uppercase">
-                <span className="block text-white">{heroLine1}</span>
-                <span className="block bg-gradient-to-r from-sky-400 to-cyan-300 bg-clip-text text-transparent">
-                  {heroLine2}
-                </span>
+                <EditableText field="tagline" value={data.tagline}>
+                  <span className="block text-white">{heroLine1}</span>
+                  <span className="block bg-gradient-to-r from-sky-400 to-cyan-300 bg-clip-text text-transparent">
+                    {heroLine2}
+                  </span>
+                </EditableText>
               </h1>
 
               <p className="text-lg sm:text-xl text-slate-300 max-w-2xl mb-10 leading-relaxed">
-                {data.description}
+                <EditableText field="description" multiline>{data.description}</EditableText>
               </p>
 
               {/* CTA Buttons */}
@@ -1028,7 +1031,7 @@ export default function WaterSportsTemplate({
                   <h2 className="text-3xl sm:text-4xl font-black mb-4">
                     Why{" "}
                     <span className="bg-gradient-to-r from-sky-400 to-cyan-300 bg-clip-text text-transparent">
-                      {data.businessName}
+                      <EditableText field="businessName">{data.businessName}</EditableText>
                     </span>
                   </h2>
                 </div>
@@ -1374,7 +1377,7 @@ export default function WaterSportsTemplate({
                   />
                 ) : (
                   <h3 className="text-xl font-black mb-4">
-                    {data.businessName}
+                    <EditableText field="businessName">{data.businessName}</EditableText>
                   </h3>
                 )}
                 <p className="text-slate-500 text-sm">
@@ -1492,7 +1495,7 @@ export default function WaterSportsTemplate({
             </div>
             <div className="border-t border-white/10 pt-8 text-center">
               <p className="text-slate-600 text-sm">
-                &copy; {new Date().getFullYear()} {data.businessName}. All
+                &copy; {new Date().getFullYear()} <EditableText field="businessName">{data.businessName}</EditableText>. All
                 rights reserved.
               </p>
             </div>

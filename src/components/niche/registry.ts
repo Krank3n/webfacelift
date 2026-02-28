@@ -13,6 +13,9 @@ const nicheTemplates: Partial<
   "water-sports": dynamic(() => import("./templates/WaterSportsTemplate"), {
     ssr: false,
   }),
+  lists: dynamic(() => import("./templates/ListsTemplate"), {
+    ssr: false,
+  }),
 };
 
 export function getNicheTemplate(

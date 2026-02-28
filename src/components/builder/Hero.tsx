@@ -5,6 +5,8 @@ import { getTemplateStyles } from "@/lib/templates";
 import { cn } from "@/lib/utils";
 import { ArrowRight } from "lucide-react";
 import Image from "next/image";
+import EditableText from "./EditableText";
+import EditableImage from "./EditableImage";
 
 export default function Hero({ block, template }: { block: HeroBlock; template: TemplateStyle }) {
   const t = getTemplateStyles(template);
@@ -27,15 +29,16 @@ export default function Hero({ block, template }: { block: HeroBlock; template: 
       {block.overlay && block.bgImage && (
         <div className={cn("absolute inset-0", t.heroOverlay)} />
       )}
+      <EditableImage field="bgImage" currentSrc={block.bgImage} />
       <div
         className="relative z-10 max-w-5xl mx-auto px-6 py-28 md:py-36 lg:py-44 flex flex-col items-center text-center animate-fade-in-up"
         style={{ color: block.textColor || "#ffffff" }}
       >
         <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight max-w-4xl">
-          {block.heading}
+          <EditableText field="heading">{block.heading}</EditableText>
         </h1>
         <p className="mt-6 text-lg md:text-xl opacity-80 max-w-2xl leading-relaxed">
-          {block.subheading}
+          <EditableText field="subheading" multiline>{block.subheading}</EditableText>
         </p>
         {block.ctaText && (
           <a
@@ -45,7 +48,7 @@ export default function Hero({ block, template }: { block: HeroBlock; template: 
               t.heroCta
             )}
           >
-            {block.ctaText}
+            <EditableText field="ctaText">{block.ctaText}</EditableText>
             <ArrowRight size={16} />
           </a>
         )}

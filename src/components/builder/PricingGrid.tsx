@@ -4,6 +4,7 @@ import type { PricingGridBlock, TemplateStyle } from "@/types/blueprint";
 import { getTemplateStyles } from "@/lib/templates";
 import { cn } from "@/lib/utils";
 import { Check } from "lucide-react";
+import EditableText from "./EditableText";
 
 export default function PricingGrid({ block, template }: { block: PricingGridBlock; template: TemplateStyle }) {
   const t = getTemplateStyles(template);
@@ -16,11 +17,11 @@ export default function PricingGrid({ block, template }: { block: PricingGridBlo
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
-            {block.title}
+            <EditableText field="title">{block.title}</EditableText>
           </h2>
           {block.subtitle && (
             <p className="mt-4 text-lg opacity-60 max-w-2xl mx-auto">
-              {block.subtitle}
+              <EditableText field="subtitle">{block.subtitle}</EditableText>
             </p>
           )}
         </div>
@@ -40,9 +41,13 @@ export default function PricingGrid({ block, template }: { block: PricingGridBlo
                   Most Popular
                 </span>
               )}
-              <h3 className="text-lg font-semibold">{tier.name}</h3>
+              <h3 className="text-lg font-semibold">
+                <EditableText field={`tiers.${i}.name`}>{tier.name}</EditableText>
+              </h3>
               <div className="mt-3 flex items-baseline gap-1">
-                <span className="text-3xl font-bold">{tier.price}</span>
+                <span className="text-3xl font-bold">
+                  <EditableText field={`tiers.${i}.price`}>{tier.price}</EditableText>
+                </span>
                 {tier.period && (
                   <span className="text-sm opacity-50">/{tier.period}</span>
                 )}
@@ -56,7 +61,7 @@ export default function PricingGrid({ block, template }: { block: PricingGridBlo
                 ))}
               </ul>
               <button className={cn("mt-6 w-full py-2.5 text-sm font-semibold", t.buttonPrimary)}>
-                {tier.ctaText || "Get Started"}
+                <EditableText field={`tiers.${i}.ctaText`}>{tier.ctaText || "Get Started"}</EditableText>
               </button>
             </div>
           ))}

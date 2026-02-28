@@ -36,6 +36,19 @@ export default function IframePreview({ children }: { children: ReactNode }) {
         );
       };
 
+      // Add <base> so relative font URLs (/_next/static/media/...)
+      // resolve against the parent origin instead of about:srcdoc
+      const base = doc.createElement("base");
+      base.href = window.location.origin;
+      doc.head.appendChild(base);
+
+      // Copy font CSS variable classes from parent <html> to iframe <html>
+      // so next/font CSS variables (--font-inter) resolve inside the iframe
+      const parentClasses = document.documentElement.className;
+      if (parentClasses) {
+        doc.documentElement.className = parentClasses;
+      }
+
       syncStyles();
 
       // Watch for new styles (Next.js HMR in dev mode)
@@ -43,6 +56,33 @@ export default function IframePreview({ children }: { children: ReactNode }) {
       observerRef.current.observe(document.head, {
         childList: true,
         subtree: true,
+      });
+
+      // Intercept link clicks so they work correctly inside the preview
+      doc.addEventListener("click", (e) => {
+        const anchor = (e.target as HTMLElement).closest("a");
+        if (!anchor) return;
+
+        const href = anchor.getAttribute("href");
+        if (!href) return;
+
+        // Let tel: and mailto: links work normally
+        if (href.startsWith("tel:") || href.startsWith("mailto:")) return;
+
+        e.preventDefault();
+
+        // Hash-only links → smooth scroll within the iframe
+        if (href.startsWith("#")) {
+          if (href === "#") return; // no-op for bare "#"
+          const target = doc.querySelector(href);
+          if (target) {
+            target.scrollIntoView({ behavior: "smooth" });
+          }
+          return;
+        }
+
+        // External/absolute links → open in a new tab
+        window.open(href, "_blank", "noopener,noreferrer");
       });
 
       // Setup body
