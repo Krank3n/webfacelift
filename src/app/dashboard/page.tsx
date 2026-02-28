@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getUserProjects, deleteProject } from "@/actions/projects";
+import { getCredits } from "@/actions/credits";
 import type { Project } from "@/types/blueprint";
 import {
   Plus,
@@ -13,16 +14,19 @@ import {
   Zap,
   Loader2,
   LogOut,
+  CreditCard,
 } from "lucide-react";
 
 export default function DashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [url, setUrl] = useState("");
+  const [credits, setCredits] = useState<number | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     loadProjects();
+    getCredits().then((res) => setCredits(res.credits));
   }, []);
 
   async function loadProjects() {
@@ -56,17 +60,29 @@ export default function DashboardPage() {
               webfacelift<span className="text-indigo-400">.io</span>
             </span>
           </div>
-          <button
-            onClick={async () => {
-              const supabase = createClient();
-              await supabase.auth.signOut();
-              router.push("/");
-            }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white/50 hover:text-white hover:bg-white/10 transition-colors"
-          >
-            <LogOut size={13} />
-            Sign out
-          </button>
+          <div className="flex items-center gap-2">
+            {credits !== null && (
+              <button
+                onClick={() => router.push("/buy")}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white/50 hover:text-white hover:bg-white/10 transition-colors"
+              >
+                <Zap size={12} className="text-indigo-400" />
+                {credits} credit{credits !== 1 ? "s" : ""}
+                <CreditCard size={11} className="text-white/30 ml-1" />
+              </button>
+            )}
+            <button
+              onClick={async () => {
+                const supabase = createClient();
+                await supabase.auth.signOut();
+                router.push("/");
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white/50 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              <LogOut size={13} />
+              Sign out
+            </button>
+          </div>
         </div>
       </header>
 

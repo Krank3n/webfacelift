@@ -1,7 +1,7 @@
 "use client";
 
 import type { ServiceGridBlock, TemplateStyle } from "@/types/blueprint";
-import { getTemplateStyles } from "@/lib/templates";
+import { getTemplateStyles, getSectionPadding } from "@/lib/templates";
 import { cn } from "@/lib/utils";
 import {
   Briefcase, Shield, Zap, Heart, Star, Clock, Phone, Mail,
@@ -25,6 +25,7 @@ function getIcon(name: string): LucideIcon {
 
 export default function ServiceGrid({ block, template }: { block: ServiceGridBlock; template: TemplateStyle }) {
   const t = getTemplateStyles(template);
+  const variant = block.variant || "cards";
   const cols = block.columns || 3;
   const gridClass =
     cols === 2
@@ -35,7 +36,7 @@ export default function ServiceGrid({ block, template }: { block: ServiceGridBlo
 
   return (
     <section
-      className="w-full py-16 md:py-24 px-6"
+      className={cn("w-full px-6", getSectionPadding(block.sectionPadding))}
       style={{ backgroundColor: block.bgColor || "transparent" }}
     >
       <div className="max-w-6xl mx-auto">
@@ -49,28 +50,81 @@ export default function ServiceGrid({ block, template }: { block: ServiceGridBlo
             </p>
           )}
         </div>
-        <div className={`grid ${gridClass} gap-6`}>
-          {block.services.map((service, i) => {
-            const Icon = getIcon(service.icon);
-            return (
-              <div
-                key={i}
-                className={cn("group p-6", t.card, t.cardHover, "animate-fade-in-up")}
-                style={{ animationDelay: `${i * 100}ms` }}
-              >
-                <div className={cn("w-10 h-10 flex items-center justify-center mb-4", t.iconBox)}>
-                  <Icon size={20} className="opacity-80 group-hover:scale-110 transition-transform duration-300" />
+
+        {variant === "minimal-list" ? (
+          <div className="max-w-3xl mx-auto divide-y divide-white/[0.06]">
+            {block.services.map((service, i) => {
+              const Icon = getIcon(service.icon);
+              return (
+                <div
+                  key={i}
+                  className="group flex items-start gap-4 py-6 animate-fade-in-up"
+                  style={{ animationDelay: `${i * 100}ms` }}
+                >
+                  <div className={cn("w-10 h-10 flex items-center justify-center shrink-0 mt-0.5", t.iconBox)}>
+                    <Icon size={20} className="opacity-80" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold">
+                      <EditableText field={`services.${i}.title`}>{service.title}</EditableText>
+                    </h3>
+                    <p className="text-sm opacity-60 leading-relaxed mt-1">
+                      <EditableText field={`services.${i}.description`} multiline>{service.description}</EditableText>
+                    </p>
+                  </div>
                 </div>
-                <h3 className="text-lg font-semibold mb-2">
-                  <EditableText field={`services.${i}.title`}>{service.title}</EditableText>
-                </h3>
-                <p className="text-sm opacity-60 leading-relaxed">
-                  <EditableText field={`services.${i}.description`} multiline>{service.description}</EditableText>
-                </p>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        ) : variant === "icon-left" ? (
+          <div className={`grid ${gridClass} gap-6`}>
+            {block.services.map((service, i) => {
+              const Icon = getIcon(service.icon);
+              return (
+                <div
+                  key={i}
+                  className={cn("group flex items-start gap-4 p-6", t.card, t.cardHover, "animate-fade-in-up")}
+                  style={{ animationDelay: `${i * 100}ms` }}
+                >
+                  <div className={cn("w-10 h-10 flex items-center justify-center shrink-0", t.iconBox)}>
+                    <Icon size={20} className="opacity-80 group-hover:scale-110 transition-transform duration-300" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold mb-1">
+                      <EditableText field={`services.${i}.title`}>{service.title}</EditableText>
+                    </h3>
+                    <p className="text-sm opacity-60 leading-relaxed">
+                      <EditableText field={`services.${i}.description`} multiline>{service.description}</EditableText>
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className={`grid ${gridClass} gap-6`}>
+            {block.services.map((service, i) => {
+              const Icon = getIcon(service.icon);
+              return (
+                <div
+                  key={i}
+                  className={cn("group p-6", t.card, t.cardHover, "animate-fade-in-up")}
+                  style={{ animationDelay: `${i * 100}ms` }}
+                >
+                  <div className={cn("w-10 h-10 flex items-center justify-center mb-4", t.iconBox)}>
+                    <Icon size={20} className="opacity-80 group-hover:scale-110 transition-transform duration-300" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">
+                    <EditableText field={`services.${i}.title`}>{service.title}</EditableText>
+                  </h3>
+                  <p className="text-sm opacity-60 leading-relaxed">
+                    <EditableText field={`services.${i}.description`} multiline>{service.description}</EditableText>
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </section>
   );

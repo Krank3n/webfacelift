@@ -1,26 +1,13 @@
 "use client";
 
 import type { ContentSplitBlock, TemplateStyle } from "@/types/blueprint";
-import { getTemplateStyles } from "@/lib/templates";
+import { getTemplateStyles, getSectionPadding } from "@/lib/templates";
 import { cn } from "@/lib/utils";
 import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 import EditableText from "./EditableText";
 import EditableImage from "./EditableImage";
 
-const placeholderGradients: Record<TemplateStyle, string> = {
-  glass: "from-indigo-500/20 to-violet-500/20",
-  bold: "from-white/10 to-white/5",
-  minimal: "from-zinc-800/50 to-zinc-700/30",
-  vibrant: "from-pink-500/20 to-orange-500/20",
-};
-
-const imageRounding: Record<TemplateStyle, string> = {
-  glass: "rounded-2xl shadow-lg shadow-black/20",
-  bold: "rounded-lg shadow-xl shadow-black/30",
-  minimal: "rounded-xl",
-  vibrant: "rounded-3xl shadow-lg shadow-pink-500/10",
-};
 
 export default function ContentSplit({ block, template }: { block: ContentSplitBlock; template: TemplateStyle }) {
   const t = getTemplateStyles(template);
@@ -28,7 +15,7 @@ export default function ContentSplit({ block, template }: { block: ContentSplitB
 
   return (
     <section
-      className="w-full py-16 md:py-24 px-6"
+      className={cn("w-full px-6", getSectionPadding(block.sectionPadding))}
       style={{ backgroundColor: block.bgColor || "transparent" }}
     >
       <div
@@ -61,7 +48,7 @@ export default function ContentSplit({ block, template }: { block: ContentSplitB
         {/* Image side */}
         <div className={isLeft ? "" : "md:[direction:ltr]"}>
           {block.image ? (
-            <div className={cn("relative aspect-[4/3] overflow-hidden bg-white/5", imageRounding[template])}>
+            <div className={cn("relative aspect-[4/3] overflow-hidden bg-white/5", t.imageShadow)}>
               <Image
                 src={block.image}
                 alt={block.heading}
@@ -74,8 +61,8 @@ export default function ContentSplit({ block, template }: { block: ContentSplitB
           ) : (
             <div className={cn(
               "aspect-[4/3] bg-gradient-to-br border border-white/10",
-              placeholderGradients[template],
-              imageRounding[template]
+              t.gradientAccent,
+              t.imageShadow
             )} />
           )}
         </div>

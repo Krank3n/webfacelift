@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { scrapeAndGenerate } from "@/actions/scrapeAndGenerate";
 import { createProject } from "@/actions/projects";
+import { getCredits } from "@/actions/credits";
 import { useProjectStore } from "@/store/project-store";
 import {
   Zap,
@@ -115,9 +116,20 @@ function NewProjectContent() {
       return;
     }
 
+    // Pre-check credits (UX only — server action is the real gate)
+    const creditCheck = await getCredits();
+    if (creditCheck.credits === 0 && creditCheck.freeGranted) {
+      router.replace(`/buy?redirect=${encodeURIComponent(`/project/new?url=${encodeURIComponent(url)}`)}`);
+      return;
+    }
+
     const result = await scrapeAndGenerate(url);
 
     if (!result.success || !result.blueprint) {
+      if (result.error === "NO_CREDITS") {
+        router.replace(`/buy?redirect=${encodeURIComponent(`/project/new?url=${encodeURIComponent(url)}`)}`);
+        return;
+      }
       setError(result.error || "Generation failed.");
       return;
     }

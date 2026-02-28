@@ -2,8 +2,11 @@ import type { NicheCategory, NicheBusinessData } from "./niche";
 
 export type TemplateStyle = "glass" | "bold" | "minimal" | "vibrant";
 
+export type SectionPadding = "compact" | "default" | "spacious";
+
 export interface HeroBlock {
   type: "hero";
+  variant?: "centered" | "left-aligned" | "split-image";
   heading: string;
   subheading: string;
   ctaText: string;
@@ -12,6 +15,7 @@ export interface HeroBlock {
   bgColor?: string;
   textColor?: string;
   overlay?: boolean;
+  sectionPadding?: SectionPadding;
 }
 
 export interface ServiceItem {
@@ -22,11 +26,13 @@ export interface ServiceItem {
 
 export interface ServiceGridBlock {
   type: "serviceGrid";
+  variant?: "cards" | "minimal-list" | "icon-left";
   title: string;
   subtitle?: string;
   services: ServiceItem[];
   columns?: 2 | 3 | 4;
   bgColor?: string;
+  sectionPadding?: SectionPadding;
 }
 
 export interface ContentSplitBlock {
@@ -38,6 +44,7 @@ export interface ContentSplitBlock {
   bgColor?: string;
   ctaText?: string;
   ctaLink?: string;
+  sectionPadding?: SectionPadding;
 }
 
 export interface ContactCTABlock {
@@ -48,10 +55,12 @@ export interface ContactCTABlock {
   bgColor?: string;
   buttonText?: string;
   fields?: string[];
+  sectionPadding?: SectionPadding;
 }
 
 export interface TestimonialsBlock {
   type: "testimonials";
+  variant?: "grid" | "single-featured" | "alternating";
   title: string;
   items: {
     quote: string;
@@ -60,6 +69,7 @@ export interface TestimonialsBlock {
     avatar?: string;
   }[];
   bgColor?: string;
+  sectionPadding?: SectionPadding;
 }
 
 export interface FooterBlock {
@@ -91,12 +101,15 @@ export interface PricingGridBlock {
     ctaText?: string;
   }[];
   bgColor?: string;
+  sectionPadding?: SectionPadding;
 }
 
 export interface StatsBarBlock {
   type: "statsBar";
+  variant?: "inline" | "cards" | "bordered";
   stats: { label: string; value: string }[];
   bgColor?: string;
+  sectionPadding?: SectionPadding;
 }
 
 export interface GalleryBlock {
@@ -106,6 +119,7 @@ export interface GalleryBlock {
   images: { url: string; alt?: string }[];
   columns?: 2 | 3 | 4;
   bgColor?: string;
+  sectionPadding?: SectionPadding;
 }
 
 export interface FAQBlock {
@@ -114,6 +128,7 @@ export interface FAQBlock {
   subtitle?: string;
   items: { question: string; answer: string }[];
   bgColor?: string;
+  sectionPadding?: SectionPadding;
 }
 
 export interface TeamGridBlock {
@@ -128,6 +143,7 @@ export interface TeamGridBlock {
   }[];
   columns?: 2 | 3 | 4;
   bgColor?: string;
+  sectionPadding?: SectionPadding;
 }
 
 export interface LogoBarBlock {
@@ -135,6 +151,7 @@ export interface LogoBarBlock {
   title?: string;
   logos: { url: string; alt: string }[];
   bgColor?: string;
+  sectionPadding?: SectionPadding;
 }
 
 export type BlueprintBlock =

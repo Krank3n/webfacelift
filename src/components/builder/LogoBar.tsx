@@ -1,6 +1,8 @@
 "use client";
 
 import type { LogoBarBlock, TemplateStyle } from "@/types/blueprint";
+import { getSectionPadding } from "@/lib/templates";
+import { cn } from "@/lib/utils";
 import Image from "next/image";
 import EditableText from "./EditableText";
 import EditableImage from "./EditableImage";
@@ -8,7 +10,7 @@ import EditableImage from "./EditableImage";
 export default function LogoBar({ block }: { block: LogoBarBlock; template: TemplateStyle }) {
   return (
     <section
-      className="w-full py-12 px-6"
+      className={cn("w-full px-6", getSectionPadding(block.sectionPadding || "compact"))}
       style={{ backgroundColor: block.bgColor || "transparent" }}
     >
       <div className="max-w-6xl mx-auto">

@@ -123,10 +123,24 @@ CRITICAL RULES:
 2. Your output must conform exactly to the BlueprintState schema described below.
 3. Design for a modern, clean, professional aesthetic. Think: generous whitespace, bold typography, clear hierarchy.
 4. Use the content from the brief but completely reimagine the design.
-5. Choose a cohesive color scheme that matches the ACTUAL brand identity of the website. Extract real brand colors from the scraped site (logos, headers, buttons) rather than defaulting to generic palettes. If the site uses navy blue and gold, use navy blue and gold. If the site uses forest green and white, use those.
-6. Follow the brief's templateRecommendation for the template field.
+5. COLOR IDENTITY IS CRITICAL: Choose a cohesive color scheme that matches the ACTUAL brand identity of the website. Extract real brand colors from the scraped site (logos, headers, buttons). Do NOT default to generic palettes. Every site should feel unique:
+   - A construction company → navy + orange + white
+   - A law firm → navy + gold + cream
+   - A wake park → deep blue + cyan + white
+   - A bakery → warm brown + peach + cream
+   - A tech startup → electric blue + purple + dark slate
+   The "primary" and "secondary" colors are used for buttons, gradients, icon boxes, and accents throughout the site. Make bold, distinctive color choices that reflect THIS brand.
+6. TEMPLATE SELECTION: Use the brief's templateRecommendation as a starting point, but you may override it if a different template better fits the brand personality. Choose based on the brand's character:
+   - "glass" — Frosted panels, gradient glows, soft shadows. Best for tech/SaaS/startups.
+   - "bold" — High contrast, dramatic typography, sharp edges. Best for creative/entertainment/agencies.
+   - "minimal" — Thin borders, generous whitespace, understated. Best for professional services/consulting/luxury.
+   - "vibrant" — Warm gradients, rounded shapes, energetic feel. Best for food/retail/lifestyle/fitness.
 7. COLOR CONTRAST IS CRITICAL: The "text" color in colorScheme must be readable against the "background" color. For dark backgrounds use light text (#ffffff or #f0f0f0). For light backgrounds use dark text (#1a1a1a or #111111). NEVER pair dark text with dark background or light text with light background.
-8. For each block's bgColor: if you set a dark bgColor on a block, the renderer will auto-correct text to white. But for best results, alternate sections between your background color and primary color to create visual rhythm, ensuring the global text color works with the majority of sections.
+8. BACKGROUND CHOICE: Consider whether this business suits a dark or light site:
+   - Dark backgrounds (#0a0a0a, #0f172a, #1a1a2e) — tech, nightlife, entertainment, creative agencies
+   - Light backgrounds (#ffffff, #fafaf9, #f8f7f4) — professional services, healthcare, education, luxury
+   - Choose intentionally rather than always defaulting to dark.
+9. For each block's bgColor: alternate sections between your background color and primary color to create visual rhythm, ensuring the global text color works with the majority of sections.
 
 ROUTING LOGIC:
 - If nicheDetection.confidence === "high" AND nicheDetection.detectedNiche is one of the supported niches → generate a NICHE TEMPLATE response (nicheTemplate + nicheData, layout: []).
@@ -148,38 +162,38 @@ SCHEMA (Block Layout mode):
     // NAVBAR — href values MUST use these anchors: #services, #about, #contact, #testimonials, #pricing, #stats, #gallery, #faq, #team, #partners
     { "type": "navbar", "brand": string, "links": [{"label": string, "href": string}], "ctaText": string (optional), "bgColor": string (optional) }
 
-    // HERO
-    { "type": "hero", "heading": string, "subheading": string, "ctaText": string, "ctaLink": string (optional), "bgImage": string (optional), "bgColor": string (optional), "textColor": string (optional), "overlay": boolean (optional) }
+    // HERO — variant controls layout: "centered" (default), "left-aligned", "split-image" (text + image side by side)
+    { "type": "hero", "variant": "centered"|"left-aligned"|"split-image" (optional), "heading": string, "subheading": string, "ctaText": string, "ctaLink": string (optional), "bgImage": string (optional), "bgColor": string (optional), "textColor": string (optional), "overlay": boolean (optional), "sectionPadding": "compact"|"default"|"spacious" (optional) }
 
-    // SERVICE GRID
-    { "type": "serviceGrid", "title": string, "subtitle": string (optional), "services": [{"title": string, "description": string, "icon": string}], "columns": 2|3|4 (optional), "bgColor": string (optional) }
+    // SERVICE GRID — variant: "cards" (default grid), "minimal-list" (stacked rows), "icon-left" (horizontal cards)
+    { "type": "serviceGrid", "variant": "cards"|"minimal-list"|"icon-left" (optional), "title": string, "subtitle": string (optional), "services": [{"title": string, "description": string, "icon": string}], "columns": 2|3|4 (optional), "bgColor": string (optional), "sectionPadding": "compact"|"default"|"spacious" (optional) }
 
     // CONTENT SPLIT
-    { "type": "contentSplit", "heading": string, "body": string, "image": string (optional), "alignment": "left"|"right", "bgColor": string (optional), "ctaText": string (optional) }
+    { "type": "contentSplit", "heading": string, "body": string, "image": string (optional), "alignment": "left"|"right", "bgColor": string (optional), "ctaText": string (optional), "sectionPadding": "compact"|"default"|"spacious" (optional) }
 
-    // TESTIMONIALS
-    { "type": "testimonials", "title": string, "items": [{"quote": string, "author": string, "role": string (optional), "avatar": string (optional)}], "bgColor": string (optional) }
+    // TESTIMONIALS — variant: "grid" (default 3-col), "single-featured" (one large quote), "alternating" (staggered left/right)
+    { "type": "testimonials", "variant": "grid"|"single-featured"|"alternating" (optional), "title": string, "items": [{"quote": string, "author": string, "role": string (optional), "avatar": string (optional)}], "bgColor": string (optional), "sectionPadding": "compact"|"default"|"spacious" (optional) }
 
     // CONTACT CTA
-    { "type": "contactCTA", "heading": string, "subheading": string (optional), "showForm": boolean, "buttonText": string (optional), "fields": string[] (optional), "bgColor": string (optional) }
+    { "type": "contactCTA", "heading": string, "subheading": string (optional), "showForm": boolean, "buttonText": string (optional), "fields": string[] (optional), "bgColor": string (optional), "sectionPadding": "compact"|"default"|"spacious" (optional) }
 
     // PRICING GRID
-    { "type": "pricingGrid", "title": string, "subtitle": string (optional), "tiers": [{"name": string, "price": string, "period": string (optional), "features": [string], "highlighted": boolean (optional), "ctaText": string (optional)}], "bgColor": string (optional) }
+    { "type": "pricingGrid", "title": string, "subtitle": string (optional), "tiers": [{"name": string, "price": string, "period": string (optional), "features": [string], "highlighted": boolean (optional), "ctaText": string (optional)}], "bgColor": string (optional), "sectionPadding": "compact"|"default"|"spacious" (optional) }
 
-    // STATS BAR
-    { "type": "statsBar", "stats": [{"label": string, "value": string}], "bgColor": string (optional) }
+    // STATS BAR — variant: "inline" (default flex), "cards" (each stat in a card), "bordered" (separated by vertical borders)
+    { "type": "statsBar", "variant": "inline"|"cards"|"bordered" (optional), "stats": [{"label": string, "value": string}], "bgColor": string (optional), "sectionPadding": "compact"|"default"|"spacious" (optional) }
 
     // GALLERY
-    { "type": "gallery", "title": string (optional), "subtitle": string (optional), "images": [{"url": string, "alt": string (optional)}], "columns": 2|3|4 (optional), "bgColor": string (optional) }
+    { "type": "gallery", "title": string (optional), "subtitle": string (optional), "images": [{"url": string, "alt": string (optional)}], "columns": 2|3|4 (optional), "bgColor": string (optional), "sectionPadding": "compact"|"default"|"spacious" (optional) }
 
     // FAQ
-    { "type": "faq", "title": string, "subtitle": string (optional), "items": [{"question": string, "answer": string}], "bgColor": string (optional) }
+    { "type": "faq", "title": string, "subtitle": string (optional), "items": [{"question": string, "answer": string}], "bgColor": string (optional), "sectionPadding": "compact"|"default"|"spacious" (optional) }
 
     // TEAM GRID
-    { "type": "teamGrid", "title": string, "subtitle": string (optional), "members": [{"name": string, "role": string, "image": string (optional), "bio": string (optional)}], "columns": 2|3|4 (optional), "bgColor": string (optional) }
+    { "type": "teamGrid", "title": string, "subtitle": string (optional), "members": [{"name": string, "role": string, "image": string (optional), "bio": string (optional)}], "columns": 2|3|4 (optional), "bgColor": string (optional), "sectionPadding": "compact"|"default"|"spacious" (optional) }
 
     // LOGO BAR
-    { "type": "logoBar", "title": string (optional), "logos": [{"url": string, "alt": string}], "bgColor": string (optional) }
+    { "type": "logoBar", "title": string (optional), "logos": [{"url": string, "alt": string}], "bgColor": string (optional), "sectionPadding": "compact"|"default"|"spacious" (optional) }
 
     // FOOTER
     { "type": "footer", "companyName": string, "links": [{"label": string, "href": string}] (optional), "copyright": string (optional), "bgColor": string (optional) }
@@ -195,12 +209,13 @@ IMAGE PLACEMENT RULES (CRITICAL — follow the brief's imageCatalog):
 - NEVER fabricate, invent, or use placeholder image URLs. Only use URLs from the brief's imageCatalog.
 - If imageCatalog is empty, omit all bgImage and image fields entirely (do not use empty strings).
 
-TEMPLATE SELECTION:
-Use the brief's templateRecommendation.template value:
-- "glass" — Frosted panels, gradient glows, soft shadows.
-- "bold" — High contrast, dramatic typography, sharp edges, accent glows.
-- "minimal" — Thin borders, generous whitespace, understated transitions.
-- "vibrant" — Warm gradients, rounded shapes, colorful shadows, energetic feel.
+VARIANT & LAYOUT GUIDANCE:
+Use variants and sectionPadding to create visual variety. Every generated site should feel unique — avoid always using the same variant for every block type.
+- Hero: use "centered" for impact-driven sites, "left-aligned" for professional/authoritative brands, "split-image" when you have a strong hero image and want a balanced layout.
+- ServiceGrid: "cards" for visual services with icons, "minimal-list" for professional/clean layouts, "icon-left" for detailed service descriptions.
+- Testimonials: "grid" for 3+ testimonials, "single-featured" when you have one powerful quote, "alternating" for a more editorial feel.
+- StatsBar: "inline" for compact stats between sections, "cards" for emphasized metrics, "bordered" for a classic look.
+- sectionPadding: Use "compact" for stats bars, logo bars, and transitions. Use "spacious" for hero and CTA sections to create breathing room. Use "default" for most content sections. Varying padding between sections creates visual rhythm.
 
 CONTENT MAPPING:
 - Map contentSections to appropriate block types (about → contentSplit, services → serviceGrid, etc.)
@@ -276,6 +291,18 @@ TEMPLATE FIELD:
 The blueprint has a "template" field with values: "glass", "bold", "minimal", or "vibrant".
 - If the user asks to change the template/style/theme (e.g. "make it bold", "switch to minimal", "use vibrant style"), update the "template" field accordingly.
 - When changing templates, you may also adjust colorScheme to complement the new template style.
+
+BLOCK VARIANTS:
+Several block types support a "variant" field for layout variation:
+- hero: "centered" | "left-aligned" | "split-image" — controls hero layout and text alignment
+- serviceGrid: "cards" | "minimal-list" | "icon-left" — controls service presentation style
+- testimonials: "grid" | "single-featured" | "alternating" — controls testimonial layout
+- statsBar: "inline" | "cards" | "bordered" — controls stat presentation
+
+SECTION PADDING:
+Most blocks support "sectionPadding": "compact" | "default" | "spacious" to control vertical spacing.
+- When users ask for more/less space, tighter layout, or breathing room — adjust sectionPadding.
+- When users ask to change the hero layout (e.g., "make the hero left-aligned", "split hero with image") — update the hero variant.
 
 RESPONSE FORMAT:
 {

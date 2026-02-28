@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { validateUrl } from "@/lib/url-validation";
 import {
   ArrowRight,
   Globe,
@@ -15,6 +16,7 @@ import {
 
 export default function LandingPage() {
   const [url, setUrl] = useState("");
+  const [urlError, setUrlError] = useState<string | null>(null);
   const [isSignedIn, setIsSignedIn] = useState<boolean | null>(null);
   const router = useRouter();
 
@@ -27,6 +29,12 @@ export default function LandingPage() {
 
   function handleStart() {
     if (!url.trim()) return;
+    const check = validateUrl(url.trim());
+    if (!check.valid) {
+      setUrlError(check.error || "This site type is not supported.");
+      return;
+    }
+    setUrlError(null);
     const encoded = encodeURIComponent(url.trim());
     router.push(`/project/new?url=${encoded}`);
   }
@@ -106,7 +114,7 @@ export default function LandingPage() {
               type="url"
               placeholder="https://outdated-business-site.com"
               value={url}
-              onChange={(e) => setUrl(e.target.value)}
+              onChange={(e) => { setUrl(e.target.value); setUrlError(null); }}
               onKeyDown={(e) => e.key === "Enter" && handleStart()}
               className="flex-1 bg-transparent text-white text-sm placeholder:text-white/[0.35] outline-none py-2"
             />
@@ -118,9 +126,13 @@ export default function LandingPage() {
               <ArrowRight size={14} />
             </button>
           </div>
-          <p className="mt-3 text-xs text-white/30">
-            No account required to preview. Sign in to save projects.
-          </p>
+          {urlError ? (
+            <p className="mt-3 text-xs text-red-400">{urlError}</p>
+          ) : (
+            <p className="mt-3 text-xs text-white/30">
+              No account required to preview. Sign in to save projects.
+            </p>
+          )}
         </div>
       </section>
 

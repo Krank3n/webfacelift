@@ -242,7 +242,10 @@ export default function Renderer({
         backgroundColor: blueprint.colorScheme?.background || "#0a0a0a",
         color: blueprint.colorScheme?.text || "#ffffff",
         fontFamily: blueprint.font || "inherit",
-      }}
+        "--brand-primary": blueprint.colorScheme?.primary || "#6366f1",
+        "--brand-secondary": blueprint.colorScheme?.secondary || "#8b5cf6",
+        "--brand-accent": blueprint.colorScheme?.accent || "#818cf8",
+      } as React.CSSProperties}
     >
       <GoogleFontLoader font={blueprint.font} />
       {(() => {

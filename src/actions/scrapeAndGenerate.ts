@@ -8,6 +8,8 @@ import {
 import { getGeminiDesignGuide } from "@/lib/gemini";
 import type { BlueprintState } from "@/types/blueprint";
 import type { ContentBrief } from "@/types/content-brief";
+import { validateUrl } from "@/lib/url-validation";
+import { deductCredit } from "@/actions/credits";
 
 /* ================================================================== */
 /*  Types                                                              */
@@ -538,6 +540,18 @@ export async function scrapeAndGenerate(url: string): Promise<{
   blueprint?: BlueprintState;
   error?: string;
 }> {
+  // Deduct credit before doing any work
+  const creditResult = await deductCredit();
+  if (!creditResult.success) {
+    return { success: false, error: "NO_CREDITS" };
+  }
+
+  // Validate URL before doing any work
+  const validation = validateUrl(url);
+  if (!validation.valid) {
+    return { success: false, error: validation.error };
+  }
+
   // Step 1: Multi-page scrape
   const scrapeResult = await scrapeMultiPage(url);
 

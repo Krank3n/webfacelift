@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { FAQBlock, TemplateStyle } from "@/types/blueprint";
-import { getTemplateStyles } from "@/lib/templates";
+import { getTemplateStyles, getSectionPadding } from "@/lib/templates";
 import { cn } from "@/lib/utils";
 import { ChevronDown } from "lucide-react";
 import EditableText from "./EditableText";
@@ -13,7 +13,7 @@ export default function FAQ({ block, template }: { block: FAQBlock; template: Te
 
   return (
     <section
-      className="w-full py-16 md:py-24 px-6"
+      className={cn("w-full px-6", getSectionPadding(block.sectionPadding))}
       style={{ backgroundColor: block.bgColor || "transparent" }}
     >
       <div className="max-w-3xl mx-auto">

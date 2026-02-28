@@ -32,9 +32,10 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // Protected routes: /dashboard and /project/[uuid] (but NOT /project/demo or /project/new)
+  // Protected routes: /dashboard, /buy, and /project/[uuid] (but NOT /project/demo or /project/new)
   const isProtected =
     pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/buy") ||
     (pathname.startsWith("/project/") &&
       !pathname.startsWith("/project/demo") &&
       !pathname.startsWith("/project/new"));
@@ -49,5 +50,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/project/:path*"],
+  matcher: ["/dashboard/:path*", "/project/:path*", "/buy", "/buy/:path*"],
 };

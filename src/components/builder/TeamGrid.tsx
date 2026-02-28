@@ -1,7 +1,7 @@
 "use client";
 
 import type { TeamGridBlock, TemplateStyle } from "@/types/blueprint";
-import { getTemplateStyles } from "@/lib/templates";
+import { getTemplateStyles, getSectionPadding } from "@/lib/templates";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import EditableText from "./EditableText";
@@ -19,7 +19,7 @@ export default function TeamGrid({ block, template }: { block: TeamGridBlock; te
 
   return (
     <section
-      className="w-full py-16 md:py-24 px-6"
+      className={cn("w-full px-6", getSectionPadding(block.sectionPadding))}
       style={{ backgroundColor: block.bgColor || "transparent" }}
     >
       <div className="max-w-6xl mx-auto">

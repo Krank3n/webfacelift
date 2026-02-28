@@ -1,7 +1,7 @@
 "use client";
 
 import type { ContactCTABlock, TemplateStyle } from "@/types/blueprint";
-import { getTemplateStyles } from "@/lib/templates";
+import { getTemplateStyles, getSectionPadding } from "@/lib/templates";
 import { cn } from "@/lib/utils";
 import { Send } from "lucide-react";
 import EditableText from "./EditableText";
@@ -12,7 +12,7 @@ export default function ContactCTA({ block, template }: { block: ContactCTABlock
 
   return (
     <section
-      className="w-full py-16 md:py-24 px-6"
+      className={cn("w-full px-6", getSectionPadding(block.sectionPadding))}
       style={{ backgroundColor: block.bgColor || "transparent" }}
     >
       <div className="max-w-3xl mx-auto text-center">
