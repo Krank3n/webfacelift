@@ -98,4 +98,5 @@ export interface ContentBrief {
   servicesOrProducts: ServiceOrProduct[];
   pricingTiers: PricingTier[];
   faqItems: FAQItem[];
+  extractedBrandColors?: string[];
 }

@@ -76,7 +76,8 @@ OUTPUT SCHEMA (ContentBrief):
   "testimonials": [{ "quote": string, "author": string, "role": string (optional) }],
   "servicesOrProducts": [{ "name": string, "description": string, "price": string (optional), "icon": string (optional) }],
   "pricingTiers": [{ "name": string, "price": string, "period": string (optional), "features": [string], "highlighted": boolean (optional) }],
-  "faqItems": [{ "question": string, "answer": string }]
+  "faqItems": [{ "question": string, "answer": string }],
+  "extractedBrandColors": [string] (optional — if brand colors were provided in the input, include the top 5-8 most relevant brand colors as hex values, excluding boring blacks/whites/grays. These are the ACTUAL colors from the original website's CSS.)
 }
 
 IMAGE CATALOGING RULES (CRITICAL):
@@ -104,10 +105,10 @@ SOCIAL LINK AND BOOKING URL EXTRACTION:
 - Look for gift card and merchandise/pro shop page URLs.
 
 TEMPLATE RECOMMENDATION:
-- "glass" — Best for: tech companies, SaaS, startups, software
+- "glass" — Best for: tech companies, SaaS, startups, software, spiritual/wellness/holistic (ethereal, luminous feel)
 - "bold" — Best for: creative agencies, entertainment, media, design studios
-- "minimal" — Best for: professional services, finance, law, consulting, healthcare
-- "vibrant" — Best for: restaurants, retail, lifestyle brands, food & beverage, fitness
+- "minimal" — Best for: professional services, finance, law, consulting, healthcare, meditation/zen/yoga (serene, clean)
+- "vibrant" — Best for: restaurants, retail, lifestyle brands, food & beverage, fitness, spas/beauty
 
 ${NICHE_DETECTION_INSTRUCTIONS}
 
@@ -123,22 +124,27 @@ CRITICAL RULES:
 2. Your output must conform exactly to the BlueprintState schema described below.
 3. Design for a modern, clean, professional aesthetic. Think: generous whitespace, bold typography, clear hierarchy.
 4. Use the content from the brief but completely reimagine the design.
-5. COLOR IDENTITY IS CRITICAL: Choose a cohesive color scheme that matches the ACTUAL brand identity of the website. Extract real brand colors from the scraped site (logos, headers, buttons). Do NOT default to generic palettes. Every site should feel unique:
+5. COLOR IDENTITY IS CRITICAL: If the content brief includes "extractedBrandColors", you MUST base your colorScheme on these actual CSS colors from the original website. Pick the most prominent non-gray color as primary, a complementary one as secondary, and use the overall warmth/coolness of the palette to guide background and accent choices. Do NOT ignore extractedBrandColors and invent a different palette. If no extractedBrandColors are provided, extract real brand colors from the content context. Every site should feel unique:
    - A construction company → navy + orange + white
    - A law firm → navy + gold + cream
    - A wake park → deep blue + cyan + white
    - A bakery → warm brown + peach + cream
    - A tech startup → electric blue + purple + dark slate
+   - A spiritual healer / wellness / holistic practitioner → deep plum (#3d1f3d) + warm gold (#c9a54e) + soft cream (#f5f0e8). Use rich, organic earth tones — burgundy, mauve, sage, terracotta, rose gold. NEVER use corporate blue/indigo/slate for spiritual sites.
+   - A yoga studio / meditation center → sage green + warm cream + muted gold
+   - A spa / beauty → dusty rose + champagne + soft charcoal
    The "primary" and "secondary" colors are used for buttons, gradients, icon boxes, and accents throughout the site. Make bold, distinctive color choices that reflect THIS brand.
 6. TEMPLATE SELECTION: Use the brief's templateRecommendation as a starting point, but you may override it if a different template better fits the brand personality. Choose based on the brand's character:
-   - "glass" — Frosted panels, gradient glows, soft shadows. Best for tech/SaaS/startups.
+   - "glass" — Frosted panels, gradient glows, soft shadows. Best for tech/SaaS/startups AND spiritual/wellness/holistic (ethereal, luminous quality).
    - "bold" — High contrast, dramatic typography, sharp edges. Best for creative/entertainment/agencies.
-   - "minimal" — Thin borders, generous whitespace, understated. Best for professional services/consulting/luxury.
-   - "vibrant" — Warm gradients, rounded shapes, energetic feel. Best for food/retail/lifestyle/fitness.
+   - "minimal" — Thin borders, generous whitespace, understated. Best for professional services/consulting/luxury AND zen/yoga/meditation (serene quality).
+   - "vibrant" — Warm gradients, rounded shapes, energetic feel. Best for food/retail/lifestyle/fitness/spas/beauty.
 7. COLOR CONTRAST IS CRITICAL: The "text" color in colorScheme must be readable against the "background" color. For dark backgrounds use light text (#ffffff or #f0f0f0). For light backgrounds use dark text (#1a1a1a or #111111). NEVER pair dark text with dark background or light text with light background.
 8. BACKGROUND CHOICE: Consider whether this business suits a dark or light site:
    - Dark backgrounds (#0a0a0a, #0f172a, #1a1a2e) — tech, nightlife, entertainment, creative agencies
+   - Warm dark backgrounds (#1a1019, #2d1b2d, #1f1a2e) — spiritual, healing, mystical, holistic (use warm undertones, NOT cold corporate navy/slate)
    - Light backgrounds (#ffffff, #fafaf9, #f8f7f4) — professional services, healthcare, education, luxury
+   - Warm light backgrounds (#f5f0e8, #faf7f2, #f0ebe4) — wellness, yoga, spa, organic, natural
    - Choose intentionally rather than always defaulting to dark.
 9. For each block's bgColor: alternate sections between your background color and primary color to create visual rhythm, ensuring the global text color works with the majority of sections.
 

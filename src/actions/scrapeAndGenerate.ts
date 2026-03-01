@@ -22,6 +22,7 @@ interface ScrapeResult {
   screenshotUrl?: string;
   extractedImages?: string[];
   extractedVideos?: string[];
+  extractedColors?: string[];
   internalLinks?: string[];
   error?: string;
 }
@@ -32,6 +33,7 @@ interface MultiPageScrapeResult {
   screenshotUrl?: string;
   allImages: string[];
   allVideos: string[];
+  allColors: string[];
   discoveredUrls: string[];
   error?: string;
 }
@@ -165,6 +167,74 @@ function extractVideoUrls(content: string): string[] {
 }
 
 /* ================================================================== */
+/*  CSS color extraction — pull actual brand colors from HTML/CSS      */
+/* ================================================================== */
+
+function extractCssColors(html: string): string[] {
+  const colorCounts = new Map<string, number>();
+
+  // Helper: normalize a hex color to 6-char lowercase
+  function normalizeHex(hex: string): string | null {
+    let clean = hex.replace("#", "").toLowerCase();
+    if (clean.length === 3) clean = clean[0] + clean[0] + clean[1] + clean[1] + clean[2] + clean[2];
+    if (clean.length !== 6 || !/^[0-9a-f]{6}$/.test(clean)) return null;
+    return `#${clean}`;
+  }
+
+  // Helper: rgb(r,g,b) → hex
+  function rgbToHex(r: number, g: number, b: number): string | null {
+    if ([r, g, b].some((v) => v < 0 || v > 255)) return null;
+    return `#${[r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+  }
+
+  // Helper: check if a color is "boring" (pure white, black, or near-transparent grays)
+  function isBoring(hex: string): boolean {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    // Pure black/white
+    if ((r === 0 && g === 0 && b === 0) || (r === 255 && g === 255 && b === 255)) return true;
+    // Near-black or near-white grays (r ≈ g ≈ b, and either very dark or very light)
+    const spread = Math.max(r, g, b) - Math.min(r, g, b);
+    if (spread < 10 && (r < 30 || r > 230)) return true;
+    return false;
+  }
+
+  function addColor(hex: string | null) {
+    if (!hex || isBoring(hex)) return;
+    colorCounts.set(hex, (colorCounts.get(hex) || 0) + 1);
+  }
+
+  let match: RegExpExecArray | null;
+
+  // 1. Hex colors in inline styles and CSS: #abc, #aabbcc
+  const hexRegex = /(?:color|background(?:-color)?|border(?:-color)?|fill|stroke)\s*:\s*(#[0-9a-fA-F]{3,8})/gi;
+  while ((match = hexRegex.exec(html)) !== null) addColor(normalizeHex(match[1]));
+
+  // 2. rgb/rgba values
+  const rgbRegex = /(?:color|background(?:-color)?|border(?:-color)?|fill|stroke)\s*:\s*rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})/gi;
+  while ((match = rgbRegex.exec(html)) !== null) addColor(rgbToHex(+match[1], +match[2], +match[3]));
+
+  // 3. CSS custom properties that look like colors
+  const cssVarRegex = /--[a-zA-Z-]+:\s*(#[0-9a-fA-F]{3,8})/gi;
+  while ((match = cssVarRegex.exec(html)) !== null) addColor(normalizeHex(match[1]));
+
+  // 4. CSS custom property rgb values
+  const cssVarRgbRegex = /--[a-zA-Z-]+:\s*rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})/gi;
+  while ((match = cssVarRgbRegex.exec(html)) !== null) addColor(rgbToHex(+match[1], +match[2], +match[3]));
+
+  // 5. Standalone hex colors in style attributes (more permissive)
+  const inlineHexRegex = /style="[^"]*?(#[0-9a-fA-F]{3,6})[^"]*?"/gi;
+  while ((match = inlineHexRegex.exec(html)) !== null) addColor(normalizeHex(match[1]));
+
+  // Sort by frequency (most used first), return top 15
+  return [...colorCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 15)
+    .map(([hex, count]) => `${hex} (used ${count}x)`);
+}
+
+/* ================================================================== */
 /*  OG image extraction                                                */
 /* ================================================================== */
 
@@ -282,6 +352,7 @@ async function fetchPage(url: string, timeout = 15000): Promise<ScrapeResult> {
     const regularImages = extractImageUrls(html, baseOrigin);
     const extractedImages = [...new Set([...ogImages, ...regularImages])];
     const extractedVideos = extractVideoUrls(html);
+    const extractedColors = extractCssColors(html);
     const internalLinks = extractInternalLinks(html, url);
 
     // Strip to plain text for markdown content
@@ -293,7 +364,7 @@ async function fetchPage(url: string, timeout = 15000): Promise<ScrapeResult> {
       .trim()
       .slice(0, 25000);
 
-    return { success: true, markdown: text, extractedImages, extractedVideos, internalLinks };
+    return { success: true, markdown: text, extractedImages, extractedVideos, extractedColors, internalLinks };
   } catch (err) {
     return { success: false, error: `Fetch failed: ${err instanceof Error ? err.message : "Unknown"}` };
   }
@@ -344,6 +415,9 @@ async function scrapeOnePage(url: string, apiKey: string | undefined): Promise<S
     // Extract videos
     const extractedVideos = extractVideoUrls(combinedContent);
 
+    // Extract CSS colors from rawHtml
+    const extractedColors = extractCssColors(rawHtml);
+
     // Extract internal links from both Firecrawl links output and HTML
     const htmlLinks = extractInternalLinks(combinedContent, url);
     const allLinks = [...new Set([...firecrawlLinks, ...htmlLinks])].filter((link) => {
@@ -358,6 +432,7 @@ async function scrapeOnePage(url: string, apiKey: string | undefined): Promise<S
       screenshotUrl,
       extractedImages,
       extractedVideos,
+      extractedColors,
       internalLinks: allLinks,
     };
   } catch {
@@ -414,12 +489,14 @@ async function scrapeSubpage(url: string, apiKey: string | undefined): Promise<S
     const regularImages = extractImageUrls(combined, baseOrigin);
     const extractedImages = [...new Set([...ogImages, ...regularImages])];
     const extractedVideos = extractVideoUrls(combined);
+    const extractedColors = extractCssColors(rawHtml);
 
     return {
       success: true,
       markdown: markdown.slice(0, 15000),
       extractedImages,
       extractedVideos,
+      extractedColors,
     };
   } catch {
     // Fall back to basic fetch
@@ -479,6 +556,7 @@ async function scrapeMultiPage(url: string): Promise<MultiPageScrapeResult> {
       combinedMarkdown: "",
       allImages: [],
       allVideos: [],
+      allColors: [],
       discoveredUrls: [],
       error: homePage.error || "Failed to scrape homepage",
     };
@@ -486,6 +564,7 @@ async function scrapeMultiPage(url: string): Promise<MultiPageScrapeResult> {
 
   let allImages = [...(homePage.extractedImages || [])];
   let allVideos = [...(homePage.extractedVideos || [])];
+  let allColors = [...(homePage.extractedColors || [])];
   const markdownParts = [`=== HOMEPAGE (${url}) ===\n${homePage.markdown?.slice(0, SCRAPE_LIMITS.maxMarkdownChars)}`];
 
   // Step 2: Discover subpages
@@ -514,6 +593,7 @@ async function scrapeMultiPage(url: string): Promise<MultiPageScrapeResult> {
         );
         if (result.extractedImages) allImages.push(...result.extractedImages);
         if (result.extractedVideos) allVideos.push(...result.extractedVideos);
+        if (result.extractedColors) allColors.push(...result.extractedColors);
       }
     }
   }
@@ -521,6 +601,7 @@ async function scrapeMultiPage(url: string): Promise<MultiPageScrapeResult> {
   // Deduplicate, upscale Wix URLs, and cap
   allImages = processImageUrls([...new Set(allImages)]).slice(0, SCRAPE_LIMITS.maxImages);
   allVideos = [...new Set(allVideos)].slice(0, SCRAPE_LIMITS.maxVideos);
+  allColors = [...new Set(allColors)].slice(0, 15);
 
   // Combine markdown with total cap
   const combinedMarkdown = markdownParts.join("\n").slice(0, SCRAPE_LIMITS.maxMarkdownChars);
@@ -535,6 +616,7 @@ async function scrapeMultiPage(url: string): Promise<MultiPageScrapeResult> {
     screenshotUrl: homePage.screenshotUrl,
     allImages,
     allVideos,
+    allColors,
     discoveredUrls: remainingDiscovered,
   };
 }
@@ -574,7 +656,7 @@ export async function scrapeAndGenerate(url: string): Promise<{
   let contentBrief: ContentBrief;
 
   // Build the user prompt with content, images, and videos
-  const buildStage1Prompt = (markdown: string, images: string[], videos: string[]) => {
+  const buildStage1Prompt = (markdown: string, images: string[], videos: string[], colors: string[]) => {
     let prompt = `Analyze the following scraped website content and produce a structured content brief as JSON.\n\nURL: ${url}\n\nSCRAPED CONTENT:\n${markdown}`;
     if (images.length > 0) {
       prompt += `\n\n=== IMAGES FOUND (${images.length}) ===\nCatalog ALL images in imageCatalog. Best photo = hero (priority 1).\n${images.map((img, i) => `${i + 1}. ${img}`).join("\n")}`;
@@ -582,14 +664,17 @@ export async function scrapeAndGenerate(url: string): Promise<{
     if (videos.length > 0) {
       prompt += `\n\n=== VIDEOS FOUND ===\n${videos.map((vid, i) => `${i + 1}. ${vid}`).join("\n")}`;
     }
+    if (colors.length > 0) {
+      prompt += `\n\n=== BRAND COLORS EXTRACTED FROM CSS ===\nThese are the actual colors used on the original website, sorted by frequency. Use these to inform your templateRecommendation and pass them through so the design guide and blueprint can match the original brand palette.\n${colors.join("\n")}`;
+    }
     prompt += "\n\nReturn ONLY the JSON object.";
     return prompt;
   };
 
   // Try with full content, then retry with trimmed content if truncated
   const attempts = [
-    { markdown: scrapeResult.combinedMarkdown, images: scrapeResult.allImages, videos: scrapeResult.allVideos },
-    { markdown: scrapeResult.combinedMarkdown.slice(0, 12000), images: scrapeResult.allImages.slice(0, 12), videos: scrapeResult.allVideos.slice(0, 2) },
+    { markdown: scrapeResult.combinedMarkdown, images: scrapeResult.allImages, videos: scrapeResult.allVideos, colors: scrapeResult.allColors },
+    { markdown: scrapeResult.combinedMarkdown.slice(0, 12000), images: scrapeResult.allImages.slice(0, 12), videos: scrapeResult.allVideos.slice(0, 2), colors: scrapeResult.allColors },
   ];
 
   let lastError = "";
@@ -599,7 +684,7 @@ export async function scrapeAndGenerate(url: string): Promise<{
         model: "claude-sonnet-4-6",
         max_tokens: 12000,
         system: CONTENT_ANALYSIS_SYSTEM_PROMPT,
-        messages: [{ role: "user", content: buildStage1Prompt(attempt.markdown, attempt.images, attempt.videos) }],
+        messages: [{ role: "user", content: buildStage1Prompt(attempt.markdown, attempt.images, attempt.videos, attempt.colors) }],
       });
 
       // Truncated → try again with less content

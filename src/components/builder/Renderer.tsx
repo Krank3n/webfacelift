@@ -257,25 +257,29 @@ export default function Renderer({
         let dividerIndex = 0;
 
         blueprint.layout.forEach((block, index) => {
-          // Insert divider between content blocks with different backgrounds
+          // Insert divider between all content blocks for visual rhythm
           if (index > 0) {
             const prev = blueprint.layout[index - 1];
             const skipTypes = new Set(["navbar", "footer"]);
             if (!skipTypes.has(prev.type) && !skipTypes.has(block.type)) {
-              const prevBg = (prev as { bgColor?: string }).bgColor || "transparent";
               const currBg = (block as { bgColor?: string }).bgColor || "transparent";
-              if (prevBg !== currBg) {
-                const fillColor =
-                  currBg !== "transparent" ? currBg : globalBg;
-                elements.push(
-                  <SectionDivider
-                    key={`divider-${index}`}
-                    variant={getDividerVariant(template, dividerIndex)}
-                    fillColor={fillColor}
-                  />
-                );
-                dividerIndex++;
-              }
+              const prevBg = (prev as { bgColor?: string }).bgColor || "transparent";
+              // Use the next section's bg for fill (creates smooth transition);
+              // fall back to global bg if transparent
+              const fillColor =
+                currBg !== "transparent"
+                  ? currBg
+                  : prevBg !== "transparent"
+                    ? prevBg
+                    : globalBg;
+              elements.push(
+                <SectionDivider
+                  key={`divider-${index}`}
+                  variant={getDividerVariant(template, dividerIndex)}
+                  fillColor={fillColor}
+                />
+              );
+              dividerIndex++;
             }
           }
 

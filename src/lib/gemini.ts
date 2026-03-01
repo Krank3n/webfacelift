@@ -56,7 +56,7 @@ RULES:
 8. For pricing: always recommend multi-tier card layout with a highlighted "best value" option
 9. For hero: recommend a layout variant that fits the brand: "centered" for dramatic impact, "left-aligned" for professional authority, or "split-image" for balanced visual storytelling
 10. Include "Why Choose Us" feature grid, combo/bundle highlights, and secondary service cards in your layout
-11. COLORS MUST MATCH THE ACTUAL BRAND: Extract real brand colors from the content brief (look at business name, industry, any color hints in the scraped content). A construction company might use navy + orange + white. A wake park might use deep blue + cyan + white. A law firm might use navy + gold + cream. NEVER default to generic palettes — always design for THIS specific business. The primary and secondary colors will be used for buttons, gradients, icon glows, and card accents — make them distinctive and bold.
+11. COLORS MUST MATCH THE ACTUAL BRAND: Extract real brand colors from the content brief (look at business name, industry, any color hints in the scraped content). A construction company might use navy + orange + white. A wake park might use deep blue + cyan + white. A law firm might use navy + gold + cream. A spiritual healer / holistic practitioner → deep plum (#3d1f3d) + warm gold (#c9a54e) + soft cream (#f5f0e8) — use rich organic earth tones (burgundy, mauve, sage, rose gold), NEVER corporate blue/slate. A yoga/meditation center → sage green + warm cream + muted gold. A spa/beauty → dusty rose + champagne + soft charcoal. NEVER default to generic palettes — always design for THIS specific business. The primary and secondary colors will be used for buttons, gradients, icon glows, and card accents — make them distinctive and bold.
 12. TEXT CONTRAST: For every section in your layout, specify whether text should be light or dark based on the section background. Dark backgrounds (#0a0a0a-#4a4a4a) → white/light text. Light backgrounds (#f0f0f0-#ffffff) → dark text (#1a1a1a). This is non-negotiable.
 13. For the CONTACT section: design it to match the site's brand — use the primary/accent colors, match the card style to the rest of the site. It should feel like part of the design, not a generic form. Recommend specific styling: background color, input field styles, button treatment, and layout (side-by-side info+form or stacked).
 14. VISUAL VARIETY: Every generated site must feel unique. Vary section layouts between sites:
@@ -67,7 +67,9 @@ RULES:
     - Spacing: recommend "compact" padding for stats/logo bars, "spacious" for hero/CTA, "default" for content sections
 15. BACKGROUND CHOICE: Not every site should have a dark background. Consider the brand:
     - Dark (#0a0a0a, #0f172a) — tech, nightlife, creative agencies, entertainment
+    - Warm dark (#1a1019, #2d1b2d, #1f1a2e) — spiritual, healing, mystical, holistic (warm undertones, NOT cold corporate navy/slate)
     - Light (#ffffff, #fafaf9, #f8f7f4) — healthcare, professional services, education, luxury brands
+    - Warm light (#f5f0e8, #faf7f2, #f0ebe4) — wellness, yoga, spa, organic, natural
     - Choose based on the brand's personality and industry.`;
 
 export interface GeminiDesignGuide {
