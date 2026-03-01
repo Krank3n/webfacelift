@@ -15,6 +15,8 @@ import MediaPanel from "@/components/workspace/MediaPanel";
 import PagesPanel from "@/components/workspace/PagesPanel";
 import PreviewCanvas from "@/components/workspace/PreviewCanvas";
 import MobileSheet from "@/components/workspace/MobileSheet";
+import { useUndoRedoShortcuts, useWorkspaceShortcuts } from "@/hooks/useUndoRedoShortcuts";
+import ShortcutsHelp from "@/components/workspace/ShortcutsHelp";
 import {
   Zap,
   MessageSquare,
@@ -25,7 +27,10 @@ import {
   Loader2,
   LogIn,
   Save,
+  Undo2,
+  Redo2,
 } from "lucide-react";
+import { toast } from "sonner";
 
 type Tab = "chat" | "pages" | "media" | "json";
 
@@ -38,16 +43,23 @@ function DemoWorkspaceContent() {
   const [isSignedIn, setIsSignedIn] = useState<boolean | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
 
   const blueprint = useProjectStore((s) => s.blueprint);
   const chatMessages = useProjectStore((s) => s.chatMessages);
   const uploadedImages = useProjectStore((s) => s.uploadedImages);
   const originalUrl = useProjectStore((s) => s.originalUrl);
   const isChatLoading = useProjectStore((s) => s.isChatLoading);
+  const undo = useProjectStore((s) => s.undo);
+  const redo = useProjectStore((s) => s.redo);
+  const canUndo = useProjectStore((s) => s.blueprintHistory.length > 0);
+  const canRedo = useProjectStore((s) => s.blueprintFuture.length > 0);
   const setProjectId = useProjectStore((s) => s.setProjectId);
   const setBlueprint = useProjectStore((s) => s.setBlueprint);
   const setChatMessages = useProjectStore((s) => s.setChatMessages);
   const setOriginalUrl = useProjectStore((s) => s.setOriginalUrl);
+
+  useUndoRedoShortcuts();
 
   // Check auth status
   useEffect(() => {
@@ -86,14 +98,28 @@ function DemoWorkspaceContent() {
   const handleSave = useCallback(async () => {
     if (!blueprint) return;
     setIsSaving(true);
-    const siteUrl = originalUrl || url || "unknown";
-    const result = await createProject(siteUrl, blueprint);
-    if (result.success && result.project) {
-      clearDemoSession();
-      router.replace(`/project/${result.project.id}`);
+    try {
+      const siteUrl = originalUrl || url || "unknown";
+      const result = await createProject(siteUrl, blueprint);
+      if (result.success && result.project) {
+        clearDemoSession();
+        toast.success("Project saved");
+        router.replace(`/project/${result.project.id}`);
+      } else {
+        toast.error(result.error || "Failed to save project");
+      }
+    } catch (err) {
+      console.error("Failed to save project:", err);
+      toast.error("Failed to save project — please try again");
+    } finally {
+      setIsSaving(false);
     }
-    setIsSaving(false);
   }, [blueprint, originalUrl, url, router]);
+
+  useWorkspaceShortcuts({
+    onSave: handleSave,
+    onToggleHelp: () => setShortcutsOpen((v) => !v),
+  });
 
   const tabs = [
     { key: "chat" as Tab, label: "Chat", icon: MessageSquare },
@@ -188,6 +214,24 @@ function DemoWorkspaceContent() {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-0.5">
+            <button
+              onClick={undo}
+              disabled={!canUndo}
+              title="Undo (Cmd+Z)"
+              className="p-1.5 rounded-md text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors disabled:opacity-20 disabled:pointer-events-none"
+            >
+              <Undo2 size={14} />
+            </button>
+            <button
+              onClick={redo}
+              disabled={!canRedo}
+              title="Redo (Cmd+Shift+Z)"
+              className="p-1.5 rounded-md text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors disabled:opacity-20 disabled:pointer-events-none"
+            >
+              <Redo2 size={14} />
+            </button>
+          </div>
           {isSignedIn === false && (
             <button
               onClick={() =>
@@ -250,6 +294,11 @@ function DemoWorkspaceContent() {
           {renderTabContent()}
         </MobileSheet>
       </div>
+
+      <ShortcutsHelp
+        open={shortcutsOpen}
+        onClose={() => setShortcutsOpen(false)}
+      />
     </div>
   );
 }

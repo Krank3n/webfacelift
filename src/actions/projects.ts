@@ -1,23 +1,30 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { BlueprintState, Project } from "@/types/blueprint";
+
+// All project queries use admin client to avoid infinite RLS recursion
+// between projects ↔ project_collaborators policies.
+// Auth is always verified via supabase.auth.getUser() before any query.
+
+async function getAuthUser() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user;
+}
 
 export async function createProject(
   url: string,
   blueprint: BlueprintState
 ): Promise<{ success: boolean; project?: Project; error?: string }> {
-  const supabase = await createClient();
+  const user = await getAuthUser();
+  if (!user) return { success: false, error: "Unauthorized." };
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { success: false, error: "Unauthorized." };
-  }
-
-  const { data, error } = await supabase
+  const admin = createAdminClient();
+  const { data, error } = await admin
     .from("projects")
     .insert({
       user_id: user.id,
@@ -28,10 +35,7 @@ export async function createProject(
     .select()
     .single();
 
-  if (error) {
-    return { success: false, error: error.message };
-  }
-
+  if (error) return { success: false, error: error.message };
   return { success: true, project: data as Project };
 }
 
@@ -39,18 +43,36 @@ export async function updateProjectState(
   projectId: string,
   blueprint: BlueprintState
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createClient();
+  const user = await getAuthUser();
+  if (!user) return { success: false, error: "Unauthorized." };
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Verify ownership or collaborator access
+  const admin = createAdminClient();
 
-  if (!user) {
-    return { success: false, error: "Unauthorized." };
+  const { data: project } = await admin
+    .from("projects")
+    .select("user_id")
+    .eq("id", projectId)
+    .single();
+
+  if (!project) return { success: false, error: "Project not found." };
+
+  const isOwner = project.user_id === user.id;
+
+  if (!isOwner) {
+    const { data: collab } = await admin
+      .from("project_collaborators")
+      .select("role")
+      .eq("project_id", projectId)
+      .eq("user_id", user.id)
+      .eq("status", "accepted")
+      .eq("role", "editor")
+      .maybeSingle();
+
+    if (!collab) return { success: false, error: "Unauthorized." };
   }
 
-  // RLS handles access: owners always, editors via collaborator policy
-  const { error } = await supabase
+  const { error } = await admin
     .from("projects")
     .update({
       current_json_state: blueprint,
@@ -58,35 +80,40 @@ export async function updateProjectState(
     })
     .eq("id", projectId);
 
-  if (error) {
-    return { success: false, error: error.message };
-  }
-
+  if (error) return { success: false, error: error.message };
   return { success: true };
 }
 
 export async function getProject(
   projectId: string
 ): Promise<{ success: boolean; project?: Project; error?: string }> {
-  const supabase = await createClient();
+  const user = await getAuthUser();
+  if (!user) return { success: false, error: "Unauthorized." };
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const admin = createAdminClient();
 
-  if (!user) {
-    return { success: false, error: "Unauthorized." };
-  }
-
-  // RLS handles access: owners always, collaborators via additive policy
-  const { data, error } = await supabase
+  // Fetch project
+  const { data, error } = await admin
     .from("projects")
     .select()
     .eq("id", projectId)
     .single();
 
-  if (error) {
-    return { success: false, error: error.message };
+  if (error) return { success: false, error: error.message };
+
+  // Verify access: owner or accepted collaborator
+  const isOwner = data.user_id === user.id;
+
+  if (!isOwner) {
+    const { data: collab } = await admin
+      .from("project_collaborators")
+      .select("id")
+      .eq("project_id", projectId)
+      .eq("user_id", user.id)
+      .eq("status", "accepted")
+      .maybeSingle();
+
+    if (!collab) return { success: false, error: "Unauthorized." };
   }
 
   return { success: true, project: data as Project };
@@ -97,51 +124,33 @@ export async function getUserProjects(): Promise<{
   projects?: Project[];
   error?: string;
 }> {
-  const supabase = await createClient();
+  const user = await getAuthUser();
+  if (!user) return { success: false, error: "Unauthorized." };
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { success: false, error: "Unauthorized." };
-  }
-
-  const { data, error } = await supabase
+  const admin = createAdminClient();
+  const { data, error } = await admin
     .from("projects")
     .select()
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
-  if (error) {
-    return { success: false, error: error.message };
-  }
-
+  if (error) return { success: false, error: error.message };
   return { success: true, projects: data as Project[] };
 }
 
 export async function deleteProject(
   projectId: string
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createClient();
+  const user = await getAuthUser();
+  if (!user) return { success: false, error: "Unauthorized." };
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { success: false, error: "Unauthorized." };
-  }
-
-  const { error } = await supabase
+  const admin = createAdminClient();
+  const { error } = await admin
     .from("projects")
     .delete()
     .eq("id", projectId)
     .eq("user_id", user.id);
 
-  if (error) {
-    return { success: false, error: error.message };
-  }
-
+  if (error) return { success: false, error: error.message };
   return { success: true };
 }

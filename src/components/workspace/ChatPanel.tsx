@@ -8,6 +8,7 @@ import { chatIterate } from "@/actions/chatIterate";
 import { updateProjectState } from "@/actions/projects";
 import type { ChatMessage } from "@/types/blueprint";
 import { Send, Loader2, Bot, User, Sparkles, FileText, Eye } from "lucide-react";
+import { toast } from "sonner";
 
 export default function ChatPanel() {
   const [input, setInput] = useState("");
@@ -17,7 +18,7 @@ export default function ChatPanel() {
   const blueprint = useProjectStore((s) => s.blueprint);
   const chatMessages = useProjectStore((s) => s.chatMessages);
   const addChatMessage = useProjectStore((s) => s.addChatMessage);
-  const setBlueprint = useProjectStore((s) => s.setBlueprint);
+  const pushBlueprint = useProjectStore((s) => s.pushBlueprint);
   const isChatLoading = useProjectStore((s) => s.isChatLoading);
   const setIsChatLoading = useProjectStore((s) => s.setIsChatLoading);
   const uploadedImages = useProjectStore((s) => s.uploadedImages);
@@ -61,7 +62,7 @@ export default function ChatPanel() {
     );
 
     if (result.success && result.blueprint) {
-      setBlueprint(result.blueprint);
+      pushBlueprint(result.blueprint);
 
       const assistantMsg: ChatMessage = {
         id: crypto.randomUUID(),
@@ -91,6 +92,7 @@ export default function ChatPanel() {
         timestamp: Date.now(),
       };
       addChatMessage(errorMsg);
+      toast.error("Failed to apply changes");
     }
 
     setIsChatLoading(false);

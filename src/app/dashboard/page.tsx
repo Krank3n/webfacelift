@@ -18,7 +18,11 @@ import {
   LogOut,
   CreditCard,
   Users,
+  Sparkles,
+  MessageSquare,
+  ArrowRight,
 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function DashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -53,8 +57,13 @@ export default function DashboardPage() {
   }
 
   async function handleDelete(id: string) {
-    await deleteProject(id);
-    setProjects((p) => p.filter((proj) => proj.id !== id));
+    try {
+      await deleteProject(id);
+      setProjects((p) => p.filter((proj) => proj.id !== id));
+      toast.success("Project deleted");
+    } catch {
+      toast.error("Failed to delete project");
+    }
   }
 
   return (
@@ -141,10 +150,90 @@ export default function DashboardPage() {
             <Loader2 size={20} className="text-white/30 animate-spin" />
           </div>
         ) : projects.length === 0 ? (
-          <div className="text-center py-20">
-            <p className="text-white/30 text-sm">
-              No projects yet. Paste a URL above to get started.
-            </p>
+          <div className="space-y-8">
+            {/* Welcome */}
+            <div className="text-center py-8">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-violet-600/20 border border-indigo-500/20 flex items-center justify-center mx-auto mb-4">
+                <Sparkles size={24} className="text-indigo-400" />
+              </div>
+              <h2 className="text-xl font-bold text-white mb-2">
+                Welcome to webfacelift
+              </h2>
+              <p className="text-sm text-white/40 max-w-md mx-auto">
+                Reconstruct any outdated website into a modern design in minutes.
+                Here&apos;s how to get started:
+              </p>
+            </div>
+
+            {/* How it works steps */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
+              {[
+                {
+                  step: "1",
+                  icon: Globe,
+                  title: "Paste a URL",
+                  desc: "Enter any business website URL in the input above",
+                },
+                {
+                  step: "2",
+                  icon: Sparkles,
+                  title: "AI rebuilds it",
+                  desc: "Our AI scrapes and reconstructs a modern blueprint",
+                },
+                {
+                  step: "3",
+                  icon: MessageSquare,
+                  title: "Iterate via chat",
+                  desc: "Refine colors, layout, and content through conversation",
+                },
+              ].map((item) => (
+                <div
+                  key={item.step}
+                  className="flex items-start gap-3 p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]"
+                >
+                  <div className="w-6 h-6 rounded-full bg-indigo-500/15 flex items-center justify-center shrink-0 mt-0.5">
+                    <span className="text-[11px] font-bold text-indigo-400">
+                      {item.step}
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-white mb-0.5">
+                      {item.title}
+                    </h3>
+                    <p className="text-xs text-white/35 leading-relaxed">
+                      {item.desc}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Try a demo URL */}
+            <div className="max-w-lg mx-auto">
+              <p className="text-xs text-white/30 text-center mb-3">
+                Try one of these example sites to see it in action:
+              </p>
+              <div className="flex flex-wrap justify-center gap-2">
+                {[
+                  { label: "Local plumber", url: "https://www.acehandymanservices.com" },
+                  { label: "Law firm", url: "https://www.legalmatch.com" },
+                  { label: "Restaurant", url: "https://www.olivegarden.com" },
+                ].map((demo) => (
+                  <button
+                    key={demo.url}
+                    onClick={() => {
+                      router.push(
+                        `/project/new?url=${encodeURIComponent(demo.url)}`
+                      );
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.08] text-xs text-white/50 hover:text-white hover:border-indigo-500/30 hover:bg-indigo-500/5 transition-all"
+                  >
+                    {demo.label}
+                    <ArrowRight size={10} />
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

@@ -10,6 +10,7 @@ import type { BlueprintState } from "@/types/blueprint";
 import type { ContentBrief } from "@/types/content-brief";
 import { validateUrl } from "@/lib/url-validation";
 import { deductCredit } from "@/actions/credits";
+import { buildDiscoveredPages } from "@/lib/blueprint-utils";
 
 /* ================================================================== */
 /*  Types                                                              */
@@ -31,6 +32,7 @@ interface MultiPageScrapeResult {
   screenshotUrl?: string;
   allImages: string[];
   allVideos: string[];
+  discoveredUrls: string[];
   error?: string;
 }
 
@@ -477,6 +479,7 @@ async function scrapeMultiPage(url: string): Promise<MultiPageScrapeResult> {
       combinedMarkdown: "",
       allImages: [],
       allVideos: [],
+      discoveredUrls: [],
       error: homePage.error || "Failed to scrape homepage",
     };
   }
@@ -522,12 +525,17 @@ async function scrapeMultiPage(url: string): Promise<MultiPageScrapeResult> {
   // Combine markdown with total cap
   const combinedMarkdown = markdownParts.join("\n").slice(0, SCRAPE_LIMITS.maxMarkdownChars);
 
+  // Filter discovered links: remove homepage and URLs that were already scraped as subpages
+  const scrapedSet = new Set([url, ...subpageUrls]);
+  const remainingDiscovered = discoveredLinks.filter((link) => !scrapedSet.has(link));
+
   return {
     success: true,
     combinedMarkdown,
     screenshotUrl: homePage.screenshotUrl,
     allImages,
     allVideos,
+    discoveredUrls: remainingDiscovered,
   };
 }
 
@@ -696,6 +704,11 @@ ${contentBriefStr}${designGuideContext}`,
 
     if (!blueprint.colorScheme) {
       return { success: false, error: "Stage 2: Invalid blueprint: missing colorScheme." };
+    }
+
+    // Attach discovered pages from the scrape step
+    if (scrapeResult.discoveredUrls.length > 0) {
+      blueprint.discoveredPages = buildDiscoveredPages(scrapeResult.discoveredUrls);
     }
 
     return { success: true, blueprint };

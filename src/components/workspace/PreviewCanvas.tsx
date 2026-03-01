@@ -31,7 +31,7 @@ interface ImageModalState {
 
 export default function PreviewCanvas() {
   const blueprint = useProjectStore((s) => s.blueprint);
-  const setBlueprint = useProjectStore((s) => s.setBlueprint);
+  const pushBlueprint = useProjectStore((s) => s.pushBlueprint);
   const activePageId = useProjectStore((s) => s.activePageId);
   const viewportMode = useProjectStore((s) => s.viewportMode);
   const setViewportMode = useProjectStore((s) => s.setViewportMode);
@@ -102,19 +102,19 @@ export default function PreviewCanvas() {
     (path: string, newValue: string) => {
       if (!blueprint) return;
       const updated = setDeepValue(blueprint, path, newValue);
-      setBlueprint(updated);
+      pushBlueprint(updated);
     },
-    [blueprint, setBlueprint]
+    [blueprint, pushBlueprint]
   );
 
   const handleImageSelect = useCallback(
     (path: string, newUrl: string) => {
       if (!blueprint) return;
       const updated = setDeepValue(blueprint, path, newUrl || undefined);
-      setBlueprint(updated);
+      pushBlueprint(updated);
       setImageModal((m) => ({ ...m, open: false }));
     },
-    [blueprint, setBlueprint]
+    [blueprint, pushBlueprint]
   );
 
   const handleCloseModal = useCallback(() => {

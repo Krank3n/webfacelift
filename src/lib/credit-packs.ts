@@ -3,19 +3,19 @@ export const CREDIT_PACKS = [
     id: "starter",
     name: "Starter",
     credits: 3,
-    price: 9,
+    price: 19,
   },
   {
     id: "builder",
     name: "Builder",
     credits: 10,
-    price: 25,
+    price: 49,
   },
   {
     id: "pro",
     name: "Pro",
     credits: 25,
-    price: 49,
+    price: 99,
   },
 ] as const;
 

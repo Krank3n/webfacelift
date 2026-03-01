@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import ModalOverlay from "@/components/ui/ModalOverlay";
 import {
   X,
   Link2,
@@ -21,6 +22,7 @@ import {
   updateCollaboratorRole,
 } from "@/actions/sharing";
 import type { ShareLink, Collaborator } from "@/types/sharing";
+import { toast } from "sonner";
 
 interface ShareModalProps {
   open: boolean;
@@ -95,6 +97,7 @@ export default function ShareModal({ open, projectId, onClose }: ShareModalProps
     await navigator.clipboard.writeText(getShareUrl());
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+    toast.success("Link copied to clipboard");
   }
 
   async function handleInvite() {
@@ -105,8 +108,10 @@ export default function ShareModal({ open, projectId, onClose }: ShareModalProps
     if (res.success) {
       setInviteEmail("");
       loadCollaborators();
+      toast.success("Invitation sent");
     } else {
       setInviteError(res.error || "Failed to invite.");
+      toast.error(res.error || "Failed to send invitation");
     }
     setInviting(false);
   }
@@ -114,6 +119,7 @@ export default function ShareModal({ open, projectId, onClose }: ShareModalProps
   async function handleRemove(collaboratorId: string) {
     await removeCollaborator(projectId, collaboratorId);
     setCollaborators((c) => c.filter((x) => x.id !== collaboratorId));
+    toast.success("Collaborator removed");
   }
 
   async function handleRoleChange(collaboratorId: string, role: "viewer" | "editor") {
@@ -123,17 +129,9 @@ export default function ShareModal({ open, projectId, onClose }: ShareModalProps
     );
   }
 
-  if (!open) return null;
-
   return (
-    <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-md mx-4 rounded-xl bg-zinc-900 border border-white/10 shadow-2xl shadow-black/50 animate-fade-in-up"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <ModalOverlay open={open} onClose={onClose} label="Share Project">
+      <div className="w-full max-w-md mx-4 rounded-xl bg-zinc-900 border border-white/10 shadow-2xl shadow-black/50 animate-fade-in-up">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-white/10">
           <span className="text-sm font-medium text-white">Share Project</span>
@@ -343,6 +341,6 @@ export default function ShareModal({ open, projectId, onClose }: ShareModalProps
           )}
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }

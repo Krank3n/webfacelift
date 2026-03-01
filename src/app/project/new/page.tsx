@@ -16,6 +16,7 @@ import {
   Clock,
   Sparkles,
 } from "lucide-react";
+import { toast } from "sonner";
 
 /* ================================================================== */
 /*  Pipeline stages with realistic thinking messages                   */
@@ -140,11 +141,19 @@ function NewProjectContent() {
     // Brief pause to show completion state
     await new Promise((r) => setTimeout(r, 800));
 
-    const projectRes = await createProject(url, result.blueprint);
+    try {
+      const projectRes = await createProject(url, result.blueprint);
 
-    if (projectRes.success && projectRes.project) {
-      router.replace(`/project/${projectRes.project.id}`);
-    } else {
+      if (projectRes.success && projectRes.project) {
+        router.replace(`/project/${projectRes.project.id}`);
+      } else {
+        console.warn("Failed to save project:", projectRes.error);
+        toast.error(projectRes.error || "Failed to save project — opening in demo mode");
+        router.replace(`/project/demo?url=${encodeURIComponent(url)}`);
+      }
+    } catch (err) {
+      console.error("Failed to save project:", err);
+      toast.error("Failed to save project — opening in demo mode");
       router.replace(`/project/demo?url=${encodeURIComponent(url)}`);
     }
   }, [url, existingBlueprint, setBlueprint, router]);
@@ -234,12 +243,30 @@ function NewProjectContent() {
             Generation Failed
           </h2>
           <p className="text-sm text-white/50 mb-8 leading-relaxed">{error}</p>
-          <button
-            onClick={() => router.push("/")}
-            className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-sm text-white hover:bg-white/10 transition-all duration-200 hover:border-white/20"
-          >
-            Try another URL
-          </button>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={() => {
+                setError(null);
+                setElapsedSeconds(0);
+                setCurrentStageIndex(0);
+                setCurrentThoughtIndex(0);
+                setStageProgress(0);
+                setIsComplete(false);
+                hasStarted.current = false;
+                runGeneration();
+                hasStarted.current = true;
+              }}
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-sm text-white font-medium hover:from-indigo-500 hover:to-violet-500 transition-all"
+            >
+              Retry
+            </button>
+            <button
+              onClick={() => router.push("/")}
+              className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-sm text-white hover:bg-white/10 transition-all duration-200 hover:border-white/20"
+            >
+              Try another URL
+            </button>
+          </div>
         </div>
       </div>
     );

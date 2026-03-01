@@ -174,6 +174,12 @@ export type BlueprintBlock =
   | TeamGridBlock
   | LogoBarBlock;
 
+export interface DiscoveredPage {
+  url: string;
+  name: string;
+  slug: string;
+}
+
 export interface BlueprintPage {
   id: string;
   name: string;
@@ -198,6 +204,7 @@ export interface BlueprintState {
   nicheTemplate?: NicheCategory;
   nicheData?: NicheBusinessData;
   pages?: BlueprintPage[];
+  discoveredPages?: DiscoveredPage[];
 }
 
 export interface ChatMessage {

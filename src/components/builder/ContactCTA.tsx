@@ -1,9 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import type { ContactCTABlock, TemplateStyle } from "@/types/blueprint";
 import { getTemplateStyles, getSectionPadding } from "@/lib/templates";
 import { cn } from "@/lib/utils";
-import { Send, Phone, Mail, MapPin, Clock } from "lucide-react";
+import { Send, Phone, Mail, MapPin, Clock, Check } from "lucide-react";
 import EditableText from "./EditableText";
 import ScrollReveal from "./ScrollReveal";
 
@@ -100,8 +101,10 @@ function ContactForm({
 }) {
   const t = getTemplateStyles(template);
   const fields = block.fields || ["Name", "Email", "Phone", "Message"];
+  const [formData, setFormData] = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitted, setSubmitted] = useState(false);
 
-  // Pair up short fields (not message/description) for 2-col layout
   const shortFields = fields.filter(
     (f) => !["message", "description", "comments", "details"].includes(f.toLowerCase())
   );
@@ -109,12 +112,52 @@ function ContactForm({
     ["message", "description", "comments", "details"].includes(f.toLowerCase())
   );
 
+  function validate(): boolean {
+    const newErrors: Record<string, string> = {};
+    for (const field of fields) {
+      const value = (formData[field] || "").trim();
+      if (!value) {
+        newErrors[field] = `${field} is required`;
+      } else if (field.toLowerCase() === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        newErrors[field] = "Enter a valid email";
+      }
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!validate()) return;
+
+    if (block.email) {
+      const subject = encodeURIComponent(`Contact from ${formData["Name"] || "Website Visitor"}`);
+      const bodyParts = fields.map((f) => `${f}: ${formData[f] || ""}`);
+      const body = encodeURIComponent(bodyParts.join("\n"));
+      window.open(`mailto:${block.email}?subject=${subject}&body=${body}`, "_self");
+    }
+
+    setSubmitted(true);
+    setTimeout(() => {
+      setSubmitted(false);
+      setFormData({});
+    }, 3000);
+  }
+
+  if (submitted) {
+    return (
+      <div className="flex flex-col items-center justify-center py-8 gap-3 text-center">
+        <div className="w-12 h-12 rounded-full bg-emerald-500/15 flex items-center justify-center">
+          <Check size={20} className="text-emerald-400" />
+        </div>
+        <p className="text-sm font-medium opacity-80">Message sent!</p>
+        <p className="text-xs opacity-40">We&apos;ll get back to you soon.</p>
+      </div>
+    );
+  }
+
   return (
-    <form
-      className="space-y-4 text-left"
-      onSubmit={(e) => e.preventDefault()}
-    >
-      {/* Short fields in a 2-col grid */}
+    <form className="space-y-4 text-left" onSubmit={handleSubmit} noValidate>
       {shortFields.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {shortFields.map((field) => (
@@ -130,31 +173,48 @@ function ContactForm({
                     ? "tel"
                     : "text"
                 }
+                value={formData[field] || ""}
+                onChange={(e) => {
+                  setFormData((prev) => ({ ...prev, [field]: e.target.value }));
+                  if (errors[field]) setErrors((prev) => { const n = { ...prev }; delete n[field]; return n; });
+                }}
                 className={cn(
                   "w-full px-4 py-3 text-sm text-inherit placeholder:opacity-25",
-                  t.input
+                  t.input,
+                  errors[field] && "ring-1 ring-red-500/50"
                 )}
                 placeholder={field}
               />
+              {errors[field] && (
+                <p className="text-xs text-red-400 mt-1">{errors[field]}</p>
+              )}
             </div>
           ))}
         </div>
       )}
 
-      {/* Long fields (message, etc.) */}
       {longFields.map((field) => (
         <div key={field}>
           <label className="block text-xs font-medium uppercase tracking-wider opacity-50 mb-1.5">
             {field}
           </label>
           <textarea
+            value={formData[field] || ""}
+            onChange={(e) => {
+              setFormData((prev) => ({ ...prev, [field]: e.target.value }));
+              if (errors[field]) setErrors((prev) => { const n = { ...prev }; delete n[field]; return n; });
+            }}
             className={cn(
               "w-full px-4 py-3 text-sm text-inherit placeholder:opacity-25 resize-none",
-              t.input
+              t.input,
+              errors[field] && "ring-1 ring-red-500/50"
             )}
             rows={5}
             placeholder={`Your ${field.toLowerCase()}...`}
           />
+          {errors[field] && (
+            <p className="text-xs text-red-400 mt-1">{errors[field]}</p>
+          )}
         </div>
       ))}
 

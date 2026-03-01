@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useInView } from "@/components/niche/hooks/useInView";
 
 export default function ScrollReveal({
@@ -12,6 +13,19 @@ export default function ScrollReveal({
   delay?: number;
 }) {
   const { ref, isInView } = useInView(0.1);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setPrefersReducedMotion(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  if (prefersReducedMotion) {
+    return <div className={className}>{children}</div>;
+  }
 
   return (
     <div

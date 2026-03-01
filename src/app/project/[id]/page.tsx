@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useProjectStore } from "@/store/project-store";
 import { getProject } from "@/actions/projects";
+import { updateProjectState } from "@/actions/projects";
 import ChatPanel from "@/components/workspace/ChatPanel";
 import MediaPanel from "@/components/workspace/MediaPanel";
 import PagesPanel from "@/components/workspace/PagesPanel";
@@ -11,7 +12,10 @@ import PreviewCanvas from "@/components/workspace/PreviewCanvas";
 import MobileSheet from "@/components/workspace/MobileSheet";
 import type { BlueprintState } from "@/types/blueprint";
 import ShareModal from "@/components/workspace/ShareModal";
+import ShortcutsHelp from "@/components/workspace/ShortcutsHelp";
 import { getMyPermission } from "@/actions/sharing";
+import { useUndoRedoShortcuts, useWorkspaceShortcuts } from "@/hooks/useUndoRedoShortcuts";
+import { toast } from "sonner";
 import {
   Zap,
   MessageSquare,
@@ -22,6 +26,8 @@ import {
   Code2,
   Share2,
   Eye,
+  Undo2,
+  Redo2,
 } from "lucide-react";
 
 type Tab = "chat" | "pages" | "media" | "json";
@@ -36,6 +42,7 @@ export default function WorkspacePage() {
   const [showJson, setShowJson] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
 
   const projectId = useProjectStore((s) => s.projectId);
   const blueprint = useProjectStore((s) => s.blueprint);
@@ -46,6 +53,28 @@ export default function WorkspacePage() {
   const permission = useProjectStore((s) => s.permission);
   const setPermission = useProjectStore((s) => s.setPermission);
   const setPreviewMode = useProjectStore((s) => s.setPreviewMode);
+  const undo = useProjectStore((s) => s.undo);
+  const redo = useProjectStore((s) => s.redo);
+  const canUndo = useProjectStore((s) => s.blueprintHistory.length > 0);
+  const canRedo = useProjectStore((s) => s.blueprintFuture.length > 0);
+
+  useUndoRedoShortcuts();
+
+  const handleSave = useCallback(async () => {
+    const bp = useProjectStore.getState().blueprint;
+    if (!bp || id === "demo") return;
+    const result = await updateProjectState(id, bp);
+    if (result.success) {
+      toast.success("Project saved");
+    } else {
+      toast.error(result.error || "Failed to save");
+    }
+  }, [id]);
+
+  useWorkspaceShortcuts({
+    onSave: handleSave,
+    onToggleHelp: () => setShortcutsOpen((v) => !v),
+  });
 
   useEffect(() => {
     async function load() {
@@ -187,6 +216,26 @@ export default function WorkspacePage() {
         </div>
 
         <div className="flex items-center gap-2">
+          {!isViewer && (
+            <div className="flex items-center gap-0.5">
+              <button
+                onClick={undo}
+                disabled={!canUndo}
+                title="Undo (Cmd+Z)"
+                className="p-1.5 rounded-md text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors disabled:opacity-20 disabled:pointer-events-none"
+              >
+                <Undo2 size={14} />
+              </button>
+              <button
+                onClick={redo}
+                disabled={!canRedo}
+                title="Redo (Cmd+Shift+Z)"
+                className="p-1.5 rounded-md text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors disabled:opacity-20 disabled:pointer-events-none"
+              >
+                <Redo2 size={14} />
+              </button>
+            </div>
+          )}
           {isViewer && (
             <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-[11px] text-white/40">
               <Eye size={11} />
@@ -247,6 +296,11 @@ export default function WorkspacePage() {
           onClose={() => setShareOpen(false)}
         />
       )}
+
+      <ShortcutsHelp
+        open={shortcutsOpen}
+        onClose={() => setShortcutsOpen(false)}
+      />
     </div>
   );
 }

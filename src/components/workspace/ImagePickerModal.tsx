@@ -5,6 +5,7 @@ import { X, Upload, Link, Trash2, Check } from "lucide-react";
 import { useProjectStore } from "@/store/project-store";
 import { uploadMedia } from "@/actions/uploadMedia";
 import Image from "next/image";
+import ModalOverlay from "@/components/ui/ModalOverlay";
 
 interface ImagePickerModalProps {
   open: boolean;
@@ -40,16 +41,6 @@ export default function ImagePickerModal({
     if (open) setUrlInput("");
   }, [open]);
 
-  // Escape to close
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [open, onClose]);
-
   const handleFileUpload = useCallback(
     async (file: File) => {
       setIsUploading(true);
@@ -79,19 +70,11 @@ export default function ImagePickerModal({
     [handleFileUpload]
   );
 
-  if (!open) return null;
-
   const label = labelFromPath(path);
 
   return (
-    <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-lg mx-4 rounded-xl bg-zinc-900 border border-white/10 shadow-2xl shadow-black/50 animate-fade-in-up max-h-[80vh] flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <ModalOverlay open={open} onClose={onClose} label={`Choose ${label}`}>
+      <div className="w-full max-w-lg mx-4 rounded-xl bg-zinc-900 border border-white/10 shadow-2xl shadow-black/50 animate-fade-in-up max-h-[80vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-white/10 shrink-0">
           <span className="text-sm font-medium text-white/70">
@@ -188,7 +171,7 @@ export default function ImagePickerModal({
                         alt=""
                         fill
                         className="object-cover"
-                        unoptimized
+                        loading="lazy"
                       />
                       {isActive && (
                         <div className="absolute inset-0 bg-indigo-500/20 flex items-center justify-center">
@@ -224,6 +207,6 @@ export default function ImagePickerModal({
           </button>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }

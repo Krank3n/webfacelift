@@ -10,6 +10,12 @@ import {
   CreditCard,
   Sparkles,
   ArrowLeft,
+  ShieldCheck,
+  ChevronDown,
+  Globe,
+  Palette,
+  MessageSquare,
+  FileText,
 } from "lucide-react";
 
 function BuyContent() {
@@ -134,7 +140,109 @@ function BuyContent() {
             );
           })}
         </div>
+
+        {/* Guarantee */}
+        <div className="mt-12 flex items-center justify-center gap-3 text-center">
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/[0.06] border border-emerald-500/15 text-emerald-400">
+            <ShieldCheck size={16} />
+            <span className="text-xs font-medium">
+              Not happy? Contact us within 7 days for a full refund.
+            </span>
+          </div>
+        </div>
+
+        {/* What you get */}
+        <div className="mt-16 max-w-3xl mx-auto">
+          <h2 className="text-lg font-bold text-white text-center mb-6">
+            What each credit gets you
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {[
+              { icon: Globe, label: "Full website scrape", desc: "We crawl every page and extract all content, images, and structure" },
+              { icon: Palette, label: "AI design consultation", desc: "Color palettes, typography, and layout recommendations tailored to your niche" },
+              { icon: FileText, label: "Complete blueprint", desc: "A fully structured, editable website blueprint with all your content mapped" },
+              { icon: MessageSquare, label: "Unlimited AI chat edits", desc: "Refine your design with unlimited chat-based iterations after generation" },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="flex items-start gap-3 p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]"
+              >
+                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                  <item.icon size={14} className="text-indigo-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-white">{item.label}</p>
+                  <p className="text-xs text-white/35 mt-0.5 leading-relaxed">{item.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* FAQ */}
+        <div className="mt-16 max-w-2xl mx-auto">
+          <h2 className="text-lg font-bold text-white text-center mb-6">
+            Frequently Asked Questions
+          </h2>
+          <FAQSection />
+        </div>
       </div>
+    </div>
+  );
+}
+
+const FAQ_ITEMS = [
+  {
+    q: "What exactly is a credit?",
+    a: "One credit = one complete website reconstruction. That includes scraping your existing site, AI content analysis, design consultation, and generating a full editable blueprint.",
+  },
+  {
+    q: "Can I edit my site after generation?",
+    a: "Yes! After your blueprint is generated, you get unlimited AI-powered chat edits. Change text, swap images, rearrange sections, adjust colors — all through natural language.",
+  },
+  {
+    q: "Do credits expire?",
+    a: "No. Credits never expire. Use them whenever you're ready.",
+  },
+  {
+    q: "What if the generation doesn't work well for my site?",
+    a: "Contact us within 7 days and we'll issue a full refund. We're confident in the quality, but want you to be happy.",
+  },
+  {
+    q: "Can I export or download my site?",
+    a: "You can share your project via a public link and collaborate with others. Full HTML/code export is on our roadmap.",
+  },
+];
+
+function FAQSection() {
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+  return (
+    <div className="space-y-2">
+      {FAQ_ITEMS.map((item, i) => (
+        <div
+          key={i}
+          className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden"
+        >
+          <button
+            onClick={() => setOpenIndex(openIndex === i ? null : i)}
+            className="w-full flex items-center justify-between px-5 py-3.5 text-left"
+          >
+            <span className="text-sm font-medium text-white/80">{item.q}</span>
+            <ChevronDown
+              size={14}
+              className={`text-white/30 transition-transform duration-200 shrink-0 ml-3 ${
+                openIndex === i ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+          {openIndex === i && (
+            <div className="px-5 pb-4">
+              <p className="text-sm text-white/40 leading-relaxed">{item.a}</p>
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   );
 }

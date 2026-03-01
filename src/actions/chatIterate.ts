@@ -32,7 +32,7 @@ export async function chatIterate(
     }
 
     const message = await anthropic.messages.create({
-      model: "claude-opus-4-6",
+      model: "claude-sonnet-4-6",
       max_tokens: 8192,
       system: CHAT_ITERATE_SYSTEM_PROMPT + systemAddendum,
       messages: [

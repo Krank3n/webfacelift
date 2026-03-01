@@ -18,6 +18,7 @@ import Gallery from "./Gallery";
 import FAQ from "./FAQ";
 import TeamGrid from "./TeamGrid";
 import LogoBar from "./LogoBar";
+import SectionDivider, { getDividerVariant } from "./SectionDivider";
 
 /**
  * Dynamically loads a Google Font by injecting a <link> stylesheet into the
@@ -250,7 +251,34 @@ export default function Renderer({
       <GoogleFontLoader font={blueprint.font} />
       {(() => {
         const slugCounts: Record<string, number> = {};
-        return blueprint.layout.map((block, index) => {
+        const globalBg = blueprint.colorScheme?.background || "#0a0a0a";
+        const globalText = blueprint.colorScheme?.text || "#ffffff";
+        const elements: React.ReactNode[] = [];
+        let dividerIndex = 0;
+
+        blueprint.layout.forEach((block, index) => {
+          // Insert divider between content blocks with different backgrounds
+          if (index > 0) {
+            const prev = blueprint.layout[index - 1];
+            const skipTypes = new Set(["navbar", "footer"]);
+            if (!skipTypes.has(prev.type) && !skipTypes.has(block.type)) {
+              const prevBg = (prev as { bgColor?: string }).bgColor || "transparent";
+              const currBg = (block as { bgColor?: string }).bgColor || "transparent";
+              if (prevBg !== currBg) {
+                const fillColor =
+                  currBg !== "transparent" ? currBg : globalBg;
+                elements.push(
+                  <SectionDivider
+                    key={`divider-${index}`}
+                    variant={getDividerVariant(template, dividerIndex)}
+                    fillColor={fillColor}
+                  />
+                );
+                dividerIndex++;
+              }
+            }
+          }
+
           // Use explicit sectionId if present, otherwise auto-generate from block type
           const explicitId = (block as { sectionId?: string }).sectionId;
           let sectionId: string | undefined;
@@ -261,18 +289,20 @@ export default function Renderer({
             const count = (slugCounts[base] = (slugCounts[base] || 0) + 1);
             sectionId = count === 1 ? base : `${base}-${count}`;
           }
-          return (
+          elements.push(
             <BlockWrapper
               key={`${block.type}-${index}`}
               block={block}
               index={index}
               sectionId={sectionId}
               template={template}
-              globalBg={blueprint.colorScheme?.background || "#0a0a0a"}
-              globalText={blueprint.colorScheme?.text || "#ffffff"}
+              globalBg={globalBg}
+              globalText={globalText}
             />
           );
         });
+
+        return elements;
       })()}
     </div>
   );

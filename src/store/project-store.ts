@@ -50,10 +50,14 @@ export function clearDemoSession() {
   }
 }
 
+const MAX_HISTORY = 50;
+
 interface ProjectStore {
   projectId: string | null;
   originalUrl: string | null;
   blueprint: BlueprintState | null;
+  blueprintHistory: BlueprintState[];
+  blueprintFuture: BlueprintState[];
   chatMessages: ChatMessage[];
   isGenerating: boolean;
   isChatLoading: boolean;
@@ -63,12 +67,18 @@ interface ProjectStore {
   hoveredBlockIndex: number | null;
   uploadedImages: string[];
   activePageId: string | null;
+  generatingPageUrl: string | null;
   permission: SharePermission | null;
 
   setProjectId: (id: string) => void;
   setOriginalUrl: (url: string) => void;
   setPermission: (permission: SharePermission) => void;
+  /** Set blueprint without recording history (for initial load) */
   setBlueprint: (state: BlueprintState) => void;
+  /** Set blueprint and push previous state to history (for user edits) */
+  pushBlueprint: (state: BlueprintState) => void;
+  undo: () => void;
+  redo: () => void;
   setChatMessages: (messages: ChatMessage[]) => void;
   addChatMessage: (message: ChatMessage) => void;
   setIsGenerating: (loading: boolean) => void;
@@ -82,6 +92,8 @@ interface ProjectStore {
   addPage: (page: BlueprintPage) => void;
   removePage: (pageId: string) => void;
   renamePage: (pageId: string, name: string) => void;
+  setGeneratingPageUrl: (url: string | null) => void;
+  markPageGenerated: (url: string) => void;
   reset: () => void;
 }
 
@@ -89,6 +101,8 @@ const initialState = {
   projectId: null,
   originalUrl: null,
   blueprint: null,
+  blueprintHistory: [] as BlueprintState[],
+  blueprintFuture: [] as BlueprintState[],
   chatMessages: [],
   isGenerating: false,
   isChatLoading: false,
@@ -98,6 +112,7 @@ const initialState = {
   hoveredBlockIndex: null,
   uploadedImages: [],
   activePageId: null as string | null,
+  generatingPageUrl: null as string | null,
   permission: null as SharePermission | null,
 };
 
@@ -107,7 +122,36 @@ export const useProjectStore = create<ProjectStore>((set) => ({
   setProjectId: (id) => set({ projectId: id }),
   setOriginalUrl: (url) => set({ originalUrl: url }),
   setPermission: (permission) => set({ permission }),
-  setBlueprint: (state) => set({ blueprint: state, activePageId: null }),
+  setBlueprint: (state) => set({ blueprint: state, activePageId: null, blueprintHistory: [], blueprintFuture: [] }),
+  pushBlueprint: (state) =>
+    set((s) => {
+      const history = s.blueprint
+        ? [...s.blueprintHistory, s.blueprint].slice(-MAX_HISTORY)
+        : s.blueprintHistory;
+      return { blueprint: state, blueprintHistory: history, blueprintFuture: [] };
+    }),
+  undo: () =>
+    set((s) => {
+      if (s.blueprintHistory.length === 0 || !s.blueprint) return s;
+      const history = [...s.blueprintHistory];
+      const prev = history.pop()!;
+      return {
+        blueprint: prev,
+        blueprintHistory: history,
+        blueprintFuture: [s.blueprint, ...s.blueprintFuture].slice(0, MAX_HISTORY),
+      };
+    }),
+  redo: () =>
+    set((s) => {
+      if (s.blueprintFuture.length === 0 || !s.blueprint) return s;
+      const future = [...s.blueprintFuture];
+      const next = future.shift()!;
+      return {
+        blueprint: next,
+        blueprintHistory: [...s.blueprintHistory, s.blueprint].slice(-MAX_HISTORY),
+        blueprintFuture: future,
+      };
+    }),
   setChatMessages: (messages) => set({ chatMessages: messages }),
   addChatMessage: (message) =>
     set((s) => ({ chatMessages: [...s.chatMessages, message] })),
@@ -154,6 +198,19 @@ export const useProjectStore = create<ProjectStore>((set) => ({
             p.id === pageId
               ? { ...p, name, slug: name.toLowerCase().replace(/\s+/g, "-") }
               : p
+          ),
+        },
+      };
+    }),
+  setGeneratingPageUrl: (url) => set({ generatingPageUrl: url }),
+  markPageGenerated: (url) =>
+    set((s) => {
+      if (!s.blueprint?.discoveredPages) return s;
+      return {
+        blueprint: {
+          ...s.blueprint,
+          discoveredPages: s.blueprint.discoveredPages.filter(
+            (p) => p.url !== url
           ),
         },
       };

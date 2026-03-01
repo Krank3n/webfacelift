@@ -6,17 +6,30 @@ import { nanoid } from "nanoid";
 import type { ShareLink, Collaborator, SharePermission, SharedProject } from "@/types/sharing";
 import type { BlueprintState } from "@/types/blueprint";
 
+// All DB queries use admin client to avoid infinite RLS recursion between
+// projects ↔ project_collaborators ↔ project_share_links policies.
+// Auth is always verified via supabase.auth.getUser() before any query.
+
+async function getAuthUser() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user;
+}
+
 // ─── Share Links ────────────────────────────────────────────
 
 export async function createShareLink(
   projectId: string
 ): Promise<{ success: boolean; shareLink?: ShareLink; error?: string }> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "Unauthorized." };
 
+  const admin = createAdminClient();
+
   // Verify ownership
-  const { data: project } = await supabase
+  const { data: project } = await admin
     .from("projects")
     .select("id")
     .eq("id", projectId)
@@ -27,7 +40,7 @@ export async function createShareLink(
 
   const token = nanoid(12);
 
-  const { data, error } = await supabase
+  const { data, error } = await admin
     .from("project_share_links")
     .upsert(
       { project_id: projectId, token, is_active: true },
@@ -43,11 +56,11 @@ export async function createShareLink(
 export async function getShareLink(
   projectId: string
 ): Promise<{ success: boolean; shareLink?: ShareLink | null; error?: string }> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "Unauthorized." };
 
-  const { data, error } = await supabase
+  const admin = createAdminClient();
+  const { data, error } = await admin
     .from("project_share_links")
     .select()
     .eq("project_id", projectId)
@@ -61,11 +74,11 @@ export async function toggleShareLink(
   projectId: string,
   isActive: boolean
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "Unauthorized." };
 
-  const { error } = await supabase
+  const admin = createAdminClient();
+  const { error } = await admin
     .from("project_share_links")
     .update({ is_active: isActive, updated_at: new Date().toISOString() })
     .eq("project_id", projectId);
@@ -77,11 +90,11 @@ export async function toggleShareLink(
 export async function deleteShareLink(
   projectId: string
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "Unauthorized." };
 
-  const { error } = await supabase
+  const admin = createAdminClient();
+  const { error } = await admin
     .from("project_share_links")
     .delete()
     .eq("project_id", projectId);
@@ -93,7 +106,6 @@ export async function deleteShareLink(
 export async function getSharedProject(
   token: string
 ): Promise<{ success: boolean; blueprint?: BlueprintState; siteName?: string; error?: string }> {
-  // Use admin client — caller may be unauthenticated
   const admin = createAdminClient();
 
   const { data: link, error: linkError } = await admin
@@ -127,12 +139,13 @@ export async function inviteCollaborator(
   email: string,
   role: "viewer" | "editor"
 ): Promise<{ success: boolean; collaborator?: Collaborator; error?: string }> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "Unauthorized." };
 
+  const admin = createAdminClient();
+
   // Verify ownership
-  const { data: project } = await supabase
+  const { data: project } = await admin
     .from("projects")
     .select("id")
     .eq("id", projectId)
@@ -148,7 +161,7 @@ export async function inviteCollaborator(
 
   const invite_token = nanoid(24);
 
-  const { data, error } = await supabase
+  const { data, error } = await admin
     .from("project_collaborators")
     .upsert(
       {
@@ -172,11 +185,11 @@ export async function removeCollaborator(
   projectId: string,
   collaboratorId: string
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "Unauthorized." };
 
-  const { error } = await supabase
+  const admin = createAdminClient();
+  const { error } = await admin
     .from("project_collaborators")
     .delete()
     .eq("id", collaboratorId)
@@ -191,11 +204,11 @@ export async function updateCollaboratorRole(
   collaboratorId: string,
   role: "viewer" | "editor"
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "Unauthorized." };
 
-  const { error } = await supabase
+  const admin = createAdminClient();
+  const { error } = await admin
     .from("project_collaborators")
     .update({ role, updated_at: new Date().toISOString() })
     .eq("id", collaboratorId)
@@ -208,11 +221,9 @@ export async function updateCollaboratorRole(
 export async function acceptInvite(
   inviteToken: string
 ): Promise<{ success: boolean; projectId?: string; error?: string }> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "Unauthorized." };
 
-  // Use admin to look up the invite (user might not have RLS access yet)
   const admin = createAdminClient();
   const { data: invite, error: findError } = await admin
     .from("project_collaborators")
@@ -244,8 +255,7 @@ export async function acceptInvite(
 export async function declineInvite(
   inviteToken: string
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "Unauthorized." };
 
   const admin = createAdminClient();
@@ -265,11 +275,11 @@ export async function declineInvite(
 export async function getProjectCollaborators(
   projectId: string
 ): Promise<{ success: boolean; collaborators?: Collaborator[]; error?: string }> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "Unauthorized." };
 
-  const { data, error } = await supabase
+  const admin = createAdminClient();
+  const { data, error } = await admin
     .from("project_collaborators")
     .select()
     .eq("project_id", projectId)
@@ -284,12 +294,13 @@ export async function getSharedProjects(): Promise<{
   projects?: SharedProject[];
   error?: string;
 }> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, error: "Unauthorized." };
 
+  const admin = createAdminClient();
+
   // Get accepted collaborations for this user
-  const { data: collabs, error: collabError } = await supabase
+  const { data: collabs, error: collabError } = await admin
     .from("project_collaborators")
     .select("project_id, role, invited_by")
     .eq("user_id", user.id)
@@ -298,9 +309,9 @@ export async function getSharedProjects(): Promise<{
   if (collabError) return { success: false, error: collabError.message };
   if (!collabs || collabs.length === 0) return { success: true, projects: [] };
 
-  // Fetch the projects (RLS allows collaborators to read)
+  // Fetch the projects
   const projectIds = collabs.map((c) => c.project_id);
-  const { data: projects, error: projectError } = await supabase
+  const { data: projects, error: projectError } = await admin
     .from("projects")
     .select("id, site_name, original_url, created_at, user_id")
     .in("id", projectIds);
@@ -309,7 +320,6 @@ export async function getSharedProjects(): Promise<{
 
   // Get owner emails
   const ownerIds = [...new Set((projects || []).map((p) => p.user_id))];
-  const admin = createAdminClient();
 
   let ownerEmails: Record<string, string> = {};
   if (ownerIds.length > 0) {
@@ -339,12 +349,13 @@ export async function getSharedProjects(): Promise<{
 export async function getMyPermission(
   projectId: string
 ): Promise<{ success: boolean; permission: SharePermission; error?: string }> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { success: false, permission: "none", error: "Unauthorized." };
 
+  const admin = createAdminClient();
+
   // Check if owner
-  const { data: owned } = await supabase
+  const { data: owned } = await admin
     .from("projects")
     .select("id")
     .eq("id", projectId)
@@ -354,7 +365,7 @@ export async function getMyPermission(
   if (owned) return { success: true, permission: "owner" };
 
   // Check collaborator role
-  const { data: collab } = await supabase
+  const { data: collab } = await admin
     .from("project_collaborators")
     .select("role")
     .eq("project_id", projectId)

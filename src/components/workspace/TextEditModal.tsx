@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { X } from "lucide-react";
+import ModalOverlay from "@/components/ui/ModalOverlay";
 
 interface TextEditModalProps {
   open: boolean;
@@ -43,18 +44,6 @@ export default function TextEditModal({
     }
   }, [open]);
 
-  // Escape to close
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [open, onClose]);
-
-  if (!open) return null;
-
   const label = labelFromPath(path);
 
   const handleSave = () => {
@@ -65,14 +54,8 @@ export default function TextEditModal({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-lg mx-4 rounded-xl bg-zinc-900 border border-white/10 shadow-2xl shadow-black/50 animate-fade-in-up"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <ModalOverlay open={open} onClose={onClose} label={`Edit ${label}`}>
+      <div className="w-full max-w-lg mx-4 rounded-xl bg-zinc-900 border border-white/10 shadow-2xl shadow-black/50 animate-fade-in-up">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-white/10">
           <span className="text-sm font-medium text-white/70">{label}</span>
@@ -127,6 +110,6 @@ export default function TextEditModal({
           </button>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }

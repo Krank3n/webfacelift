@@ -5,6 +5,7 @@ import { useProjectStore } from "@/store/project-store";
 import { uploadMedia } from "@/actions/uploadMedia";
 import { ImagePlus, Loader2, Copy, Check, Upload } from "lucide-react";
 import Image from "next/image";
+import { toast } from "sonner";
 
 export default function MediaPanel() {
   const [uploading, setUploading] = useState(false);
@@ -34,6 +35,9 @@ export default function MediaPanel() {
         content: `New image uploaded and available: ${result.url}`,
         timestamp: Date.now(),
       });
+      toast.success("Image uploaded");
+    } else {
+      toast.error("Upload failed");
     }
 
     setUploading(false);
@@ -44,6 +48,7 @@ export default function MediaPanel() {
     navigator.clipboard.writeText(url);
     setCopiedUrl(url);
     setTimeout(() => setCopiedUrl(null), 2000);
+    toast.success("Image URL copied");
   }
 
   return (
@@ -91,7 +96,7 @@ export default function MediaPanel() {
                   alt="Uploaded"
                   fill
                   className="object-cover"
-                  unoptimized
+                  loading="lazy"
                 />
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   <button
