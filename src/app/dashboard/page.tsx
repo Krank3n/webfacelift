@@ -4,8 +4,10 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getUserProjects, deleteProject } from "@/actions/projects";
+import { getSharedProjects } from "@/actions/sharing";
 import { getCredits } from "@/actions/credits";
 import type { Project } from "@/types/blueprint";
+import type { SharedProject } from "@/types/sharing";
 import {
   Plus,
   Globe,
@@ -15,10 +17,12 @@ import {
   Loader2,
   LogOut,
   CreditCard,
+  Users,
 } from "lucide-react";
 
 export default function DashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [sharedWithMe, setSharedWithMe] = useState<SharedProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [url, setUrl] = useState("");
   const [credits, setCredits] = useState<number | null>(null);
@@ -30,9 +34,15 @@ export default function DashboardPage() {
   }, []);
 
   async function loadProjects() {
-    const res = await getUserProjects();
+    const [res, sharedRes] = await Promise.all([
+      getUserProjects(),
+      getSharedProjects(),
+    ]);
     if (res.success && res.projects) {
       setProjects(res.projects);
+    }
+    if (sharedRes.success && sharedRes.projects) {
+      setSharedWithMe(sharedRes.projects);
     }
     setLoading(false);
   }
@@ -57,7 +67,7 @@ export default function DashboardPage() {
               <Zap size={14} className="text-white" />
             </div>
             <span className="text-sm font-bold tracking-tight text-white">
-              webfacelift<span className="text-indigo-400">.io</span>
+              webfacelift
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -179,6 +189,55 @@ export default function DashboardPage() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Shared with me */}
+        {sharedWithMe.length > 0 && (
+          <div className="mt-16">
+            <div className="flex items-center gap-2 mb-6">
+              <Users size={16} className="text-indigo-400" />
+              <h2 className="text-xl font-bold text-white tracking-tight">
+                Shared with me
+              </h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {sharedWithMe.map((project) => (
+                <div
+                  key={project.id}
+                  className="group p-5 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-white/10 transition-all cursor-pointer"
+                  onClick={() => router.push(`/project/${project.id}`)}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm font-semibold text-white truncate">
+                        {project.site_name || "Untitled Project"}
+                      </h3>
+                      <p className="text-xs text-white/30 truncate mt-0.5">
+                        {project.original_url}
+                      </p>
+                    </div>
+                    <span
+                      className={`ml-2 shrink-0 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                        project.role === "editor"
+                          ? "bg-indigo-500/15 text-indigo-400"
+                          : "bg-white/5 text-white/40"
+                      }`}
+                    >
+                      {project.role}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-white/20 truncate">
+                      by {project.owner_email}
+                    </span>
+                    <span className="text-[10px] text-white/20 font-mono">
+                      {new Date(project.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

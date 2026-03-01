@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useProjectStore } from "@/store/project-store";
 import { getBlueprintPages } from "@/lib/blueprint-utils";
 import Renderer from "@/components/builder/Renderer";
@@ -8,7 +8,7 @@ import IframePreview from "./IframePreview";
 import TextEditModal from "./TextEditModal";
 import ImagePickerModal from "./ImagePickerModal";
 import { EditContext, setDeepValue } from "@/components/builder/EditableText";
-import { Monitor, Tablet, Smartphone, Pencil, Eye } from "lucide-react";
+import { Monitor, Tablet, Smartphone, Pencil, Eye, Maximize, Minimize } from "lucide-react";
 
 const viewportWidths = {
   desktop: "100%",
@@ -39,6 +39,25 @@ export default function PreviewCanvas() {
   const setPreviewMode = useProjectStore((s) => s.setPreviewMode);
   const isGenerating = useProjectStore((s) => s.isGenerating);
   const isEditing = previewMode === "edit";
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    function onFsChange() {
+      setIsFullscreen(!!document.fullscreenElement);
+    }
+    document.addEventListener("fullscreenchange", onFsChange);
+    return () => document.removeEventListener("fullscreenchange", onFsChange);
+  }, []);
+
+  const toggleFullscreen = useCallback(() => {
+    if (!canvasRef.current) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      canvasRef.current.requestFullscreen();
+    }
+  }, []);
 
   const activePageBlueprint = useMemo(() => {
     if (!blueprint) return null;
@@ -107,7 +126,7 @@ export default function PreviewCanvas() {
   }, []);
 
   return (
-    <div className="flex flex-col h-full">
+    <div ref={canvasRef} className="flex flex-col h-full bg-zinc-950">
       {/* Floating viewport controls — hidden on mobile */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 glass rounded-xl px-2 py-1.5 hidden md:flex items-center gap-1 border border-white/10">
         {[
@@ -150,6 +169,18 @@ export default function PreviewCanvas() {
             <Icon size={14} />
           </button>
         ))}
+
+        {/* Divider */}
+        <div className="w-px h-4 bg-white/10 mx-1" />
+
+        {/* Fullscreen toggle */}
+        <button
+          onClick={toggleFullscreen}
+          className="p-1.5 rounded-lg transition-colors text-white/30 hover:text-white/60 hover:bg-white/5"
+          title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+        >
+          {isFullscreen ? <Minimize size={14} /> : <Maximize size={14} />}
+        </button>
       </div>
 
       {/* Canvas container — full-bleed on mobile, padded on desktop */}

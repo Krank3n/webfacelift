@@ -58,7 +58,6 @@ export default function LandingPage() {
           </div>
           <span className="text-lg font-bold tracking-tight text-white">
             webfacelift
-            <span className="text-indigo-400">.io</span>
           </span>
         </div>
         <div className="hidden md:flex items-center gap-8">
@@ -271,7 +270,7 @@ export default function LandingPage() {
       <footer className="relative z-10 border-t border-white/[0.06] px-6 py-8">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <span className="text-xs text-white/30">
-            &copy; {new Date().getFullYear()} webfacelift.io
+            &copy; {new Date().getFullYear()} webfacelift
           </span>
           <span className="text-xs text-white/20">
             Powered by Claude &middot; Built with Next.js

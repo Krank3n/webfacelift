@@ -49,14 +49,14 @@ export async function updateProjectState(
     return { success: false, error: "Unauthorized." };
   }
 
+  // RLS handles access: owners always, editors via collaborator policy
   const { error } = await supabase
     .from("projects")
     .update({
       current_json_state: blueprint,
       site_name: blueprint.siteName,
     })
-    .eq("id", projectId)
-    .eq("user_id", user.id);
+    .eq("id", projectId);
 
   if (error) {
     return { success: false, error: error.message };
@@ -78,11 +78,11 @@ export async function getProject(
     return { success: false, error: "Unauthorized." };
   }
 
+  // RLS handles access: owners always, collaborators via additive policy
   const { data, error } = await supabase
     .from("projects")
     .select()
     .eq("id", projectId)
-    .eq("user_id", user.id)
     .single();
 
   if (error) {

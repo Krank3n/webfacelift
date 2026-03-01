@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "webfacelift.io — More than a facelift. We reconstruct the bones.",
+  title: "webfacelift — More than a facelift. We reconstruct the bones.",
   description:
     "Transform outdated business websites into modern, stunning designs using AI. Paste a URL, get a complete redesign in seconds.",
 };

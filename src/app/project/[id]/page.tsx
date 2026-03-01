@@ -10,6 +10,8 @@ import PagesPanel from "@/components/workspace/PagesPanel";
 import PreviewCanvas from "@/components/workspace/PreviewCanvas";
 import MobileSheet from "@/components/workspace/MobileSheet";
 import type { BlueprintState } from "@/types/blueprint";
+import ShareModal from "@/components/workspace/ShareModal";
+import { getMyPermission } from "@/actions/sharing";
 import {
   Zap,
   MessageSquare,
@@ -18,6 +20,8 @@ import {
   ArrowLeft,
   Loader2,
   Code2,
+  Share2,
+  Eye,
 } from "lucide-react";
 
 type Tab = "chat" | "pages" | "media" | "json";
@@ -31,6 +35,7 @@ export default function WorkspacePage() {
   const [loading, setLoading] = useState(true);
   const [showJson, setShowJson] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   const projectId = useProjectStore((s) => s.projectId);
   const blueprint = useProjectStore((s) => s.blueprint);
@@ -38,12 +43,16 @@ export default function WorkspacePage() {
   const setProjectId = useProjectStore((s) => s.setProjectId);
   const setBlueprint = useProjectStore((s) => s.setBlueprint);
   const setOriginalUrl = useProjectStore((s) => s.setOriginalUrl);
+  const permission = useProjectStore((s) => s.permission);
+  const setPermission = useProjectStore((s) => s.setPermission);
+  const setPreviewMode = useProjectStore((s) => s.setPreviewMode);
 
   useEffect(() => {
     async function load() {
       // Demo mode: blueprint already in store from new page
       if (id === "demo") {
         setProjectId("demo");
+        setPermission("owner");
         setLoading(false);
         return;
       }
@@ -54,7 +63,12 @@ export default function WorkspacePage() {
         return;
       }
 
-      const res = await getProject(id);
+      // Fetch project and permission in parallel
+      const [res, permRes] = await Promise.all([
+        getProject(id),
+        getMyPermission(id),
+      ]);
+
       if (res.success && res.project) {
         setProjectId(res.project.id);
         setOriginalUrl(res.project.original_url);
@@ -62,11 +76,20 @@ export default function WorkspacePage() {
           setBlueprint(res.project.current_json_state);
         }
       }
+
+      if (permRes.success) {
+        setPermission(permRes.permission);
+        // Viewers are forced into preview mode
+        if (permRes.permission === "viewer") {
+          setPreviewMode("preview");
+        }
+      }
+
       setLoading(false);
     }
 
     load();
-  }, [id, projectId, blueprint, setProjectId, setBlueprint, setOriginalUrl]);
+  }, [id, projectId, blueprint, setProjectId, setBlueprint, setOriginalUrl, setPermission, setPreviewMode]);
 
   if (loading) {
     return (
@@ -76,12 +99,19 @@ export default function WorkspacePage() {
     );
   }
 
-  const tabs = [
-    { key: "chat" as Tab, label: "Chat", icon: MessageSquare },
-    { key: "pages" as Tab, label: "Pages", icon: FileText },
-    { key: "media" as Tab, label: "Media", icon: ImagePlus },
-    { key: "json" as Tab, label: "JSON", icon: Code2 },
-  ];
+  const isViewer = permission === "viewer";
+
+  const tabs = isViewer
+    ? [
+        { key: "pages" as Tab, label: "Pages", icon: FileText },
+        { key: "json" as Tab, label: "JSON", icon: Code2 },
+      ]
+    : [
+        { key: "chat" as Tab, label: "Chat", icon: MessageSquare },
+        { key: "pages" as Tab, label: "Pages", icon: FileText },
+        { key: "media" as Tab, label: "Media", icon: ImagePlus },
+        { key: "json" as Tab, label: "JSON", icon: Code2 },
+      ];
 
   function renderTabSwitcher() {
     return (
@@ -143,7 +173,7 @@ export default function WorkspacePage() {
               <Zap size={12} className="text-white" />
             </div>
             <span className="text-xs font-semibold text-white">
-              webfacelift<span className="text-indigo-400">.io</span>
+              webfacelift
             </span>
           </div>
           {blueprint?.siteName && (
@@ -153,6 +183,24 @@ export default function WorkspacePage() {
                 {blueprint.siteName}
               </span>
             </>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          {isViewer && (
+            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-[11px] text-white/40">
+              <Eye size={11} />
+              View only
+            </span>
+          )}
+          {permission === "owner" && id !== "demo" && (
+            <button
+              onClick={() => setShareOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white/50 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              <Share2 size={13} />
+              Share
+            </button>
           )}
         </div>
       </header>
@@ -190,6 +238,15 @@ export default function WorkspacePage() {
           {renderTabContent()}
         </MobileSheet>
       </div>
+
+      {/* Share Modal — only rendered for owners */}
+      {permission === "owner" && id !== "demo" && (
+        <ShareModal
+          open={shareOpen}
+          projectId={id}
+          onClose={() => setShareOpen(false)}
+        />
+      )}
     </div>
   );
 }

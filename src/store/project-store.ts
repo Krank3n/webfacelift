@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { BlueprintState, BlueprintPage, ChatMessage } from "@/types/blueprint";
+import type { SharePermission } from "@/types/sharing";
 import { getBlueprintPages, MAX_FREE_PAGES } from "@/lib/blueprint-utils";
 
 const DEMO_STORAGE_KEY = "webfacelift:demo";
@@ -62,9 +63,11 @@ interface ProjectStore {
   hoveredBlockIndex: number | null;
   uploadedImages: string[];
   activePageId: string | null;
+  permission: SharePermission | null;
 
   setProjectId: (id: string) => void;
   setOriginalUrl: (url: string) => void;
+  setPermission: (permission: SharePermission) => void;
   setBlueprint: (state: BlueprintState) => void;
   setChatMessages: (messages: ChatMessage[]) => void;
   addChatMessage: (message: ChatMessage) => void;
@@ -95,6 +98,7 @@ const initialState = {
   hoveredBlockIndex: null,
   uploadedImages: [],
   activePageId: null as string | null,
+  permission: null as SharePermission | null,
 };
 
 export const useProjectStore = create<ProjectStore>((set) => ({
@@ -102,6 +106,7 @@ export const useProjectStore = create<ProjectStore>((set) => ({
 
   setProjectId: (id) => set({ projectId: id }),
   setOriginalUrl: (url) => set({ originalUrl: url }),
+  setPermission: (permission) => set({ permission }),
   setBlueprint: (state) => set({ blueprint: state, activePageId: null }),
   setChatMessages: (messages) => set({ chatMessages: messages }),
   addChatMessage: (message) =>

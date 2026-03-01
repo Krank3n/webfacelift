@@ -49,12 +49,17 @@ export interface ContentSplitBlock {
 
 export interface ContactCTABlock {
   type: "contactCTA";
+  variant?: "split" | "centered" | "minimal";
   heading: string;
   subheading?: string;
   showForm: boolean;
   bgColor?: string;
   buttonText?: string;
   fields?: string[];
+  phone?: string;
+  email?: string;
+  address?: string;
+  hours?: string;
   sectionPadding?: SectionPadding;
 }
 

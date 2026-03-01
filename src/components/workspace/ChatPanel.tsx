@@ -7,7 +7,7 @@ import { getBlueprintPages } from "@/lib/blueprint-utils";
 import { chatIterate } from "@/actions/chatIterate";
 import { updateProjectState } from "@/actions/projects";
 import type { ChatMessage } from "@/types/blueprint";
-import { Send, Loader2, Bot, User, Sparkles, FileText } from "lucide-react";
+import { Send, Loader2, Bot, User, Sparkles, FileText, Eye } from "lucide-react";
 
 export default function ChatPanel() {
   const [input, setInput] = useState("");
@@ -22,6 +22,8 @@ export default function ChatPanel() {
   const setIsChatLoading = useProjectStore((s) => s.setIsChatLoading);
   const uploadedImages = useProjectStore((s) => s.uploadedImages);
   const activePageId = useProjectStore((s) => s.activePageId);
+  const permission = useProjectStore((s) => s.permission);
+  const isViewer = permission === "viewer";
 
   const activePageName = useMemo(() => {
     if (!blueprint) return "Home";
@@ -167,30 +169,39 @@ export default function ChatPanel() {
 
       {/* Input */}
       <div className="px-4 py-3 border-t border-white/[0.06]">
-        <div className="flex items-center gap-1.5 px-1 mb-1.5">
-          <FileText size={10} className="text-white/20" />
-          <span className="text-[11px] text-white/30">
-            Editing: <span className="text-white/50">{activePageName}</span>
-          </span>
-        </div>
-        <div className="flex items-center gap-2 p-1 rounded-lg bg-zinc-900 border border-white/10 focus-within:border-indigo-500/50 transition-colors">
-          <input
-            type="text"
-            placeholder="Describe your changes..."
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
-            disabled={isChatLoading || !blueprint}
-            className="flex-1 bg-transparent text-white text-sm placeholder:text-white/30 outline-none px-2 py-1.5 disabled:opacity-50"
-          />
-          <button
-            onClick={handleSend}
-            disabled={isChatLoading || !input.trim() || !blueprint}
-            className="p-2 rounded-md bg-gradient-to-r from-indigo-600 to-violet-600 text-white disabled:opacity-30 hover:from-indigo-500 hover:to-violet-500 transition-all"
-          >
-            <Send size={14} />
-          </button>
-        </div>
+        {isViewer ? (
+          <div className="flex items-center justify-center gap-2 py-2 text-white/30 text-xs">
+            <Eye size={12} />
+            View-only — you cannot make changes
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-1.5 px-1 mb-1.5">
+              <FileText size={10} className="text-white/20" />
+              <span className="text-[11px] text-white/30">
+                Editing: <span className="text-white/50">{activePageName}</span>
+              </span>
+            </div>
+            <div className="flex items-center gap-2 p-1 rounded-lg bg-zinc-900 border border-white/10 focus-within:border-indigo-500/50 transition-colors">
+              <input
+                type="text"
+                placeholder="Describe your changes..."
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
+                disabled={isChatLoading || !blueprint}
+                className="flex-1 bg-transparent text-white text-sm placeholder:text-white/30 outline-none px-2 py-1.5 disabled:opacity-50"
+              />
+              <button
+                onClick={handleSend}
+                disabled={isChatLoading || !input.trim() || !blueprint}
+                className="p-2 rounded-md bg-gradient-to-r from-indigo-600 to-violet-600 text-white disabled:opacity-30 hover:from-indigo-500 hover:to-violet-500 transition-all"
+              >
+                <Send size={14} />
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

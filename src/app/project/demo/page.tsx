@@ -178,7 +178,7 @@ function DemoWorkspaceContent() {
               <Zap size={12} className="text-white" />
             </div>
             <span className="text-xs font-semibold text-white hidden sm:inline">
-              webfacelift<span className="text-indigo-400">.io</span>
+              webfacelift
             </span>
           </div>
           <span className="text-white/10 hidden sm:inline">/</span>

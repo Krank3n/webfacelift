@@ -33,12 +33,20 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Protected routes: /dashboard, /buy, and /project/[uuid] (but NOT /project/demo or /project/new)
+  // /invite pages handle their own auth (redirect to login if needed)
   const isProtected =
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/buy") ||
     (pathname.startsWith("/project/") &&
       !pathname.startsWith("/project/demo") &&
       !pathname.startsWith("/project/new"));
+
+  // /invite pages: refresh session but don't force redirect — the page handles auth
+  if (pathname.startsWith("/invite/") && !user) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("redirect", pathname);
+    return NextResponse.redirect(loginUrl);
+  }
 
   if (isProtected && !user) {
     const loginUrl = new URL("/login", request.url);
@@ -50,5 +58,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/project/:path*", "/buy", "/buy/:path*"],
+  matcher: ["/dashboard/:path*", "/project/:path*", "/buy", "/buy/:path*", "/invite/:path*"],
 };

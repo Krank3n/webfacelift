@@ -174,8 +174,8 @@ SCHEMA (Block Layout mode):
     // TESTIMONIALS — variant: "grid" (default 3-col), "single-featured" (one large quote), "alternating" (staggered left/right)
     { "type": "testimonials", "variant": "grid"|"single-featured"|"alternating" (optional), "title": string, "items": [{"quote": string, "author": string, "role": string (optional), "avatar": string (optional)}], "bgColor": string (optional), "sectionPadding": "compact"|"default"|"spacious" (optional) }
 
-    // CONTACT CTA
-    { "type": "contactCTA", "heading": string, "subheading": string (optional), "showForm": boolean, "buttonText": string (optional), "fields": string[] (optional), "bgColor": string (optional), "sectionPadding": "compact"|"default"|"spacious" (optional) }
+    // CONTACT CTA — variant: "split" (form + info side-by-side, best when contact info is available), "centered" (form centered with info cards below), "minimal" (no form, just contact info + CTA button)
+    { "type": "contactCTA", "variant": "split"|"centered"|"minimal" (optional), "heading": string, "subheading": string (optional), "showForm": boolean, "buttonText": string (optional), "fields": string[] (optional, default ["Name","Email","Phone","Message"]), "phone": string (optional), "email": string (optional), "address": string (optional), "hours": string (optional), "bgColor": string (optional), "sectionPadding": "compact"|"default"|"spacious" (optional) }
 
     // PRICING GRID
     { "type": "pricingGrid", "title": string, "subtitle": string (optional), "tiers": [{"name": string, "price": string, "period": string (optional), "features": [string], "highlighted": boolean (optional), "ctaText": string (optional)}], "bgColor": string (optional), "sectionPadding": "compact"|"default"|"spacious" (optional) }
@@ -215,6 +215,7 @@ Use variants and sectionPadding to create visual variety. Every generated site s
 - ServiceGrid: "cards" for visual services with icons, "minimal-list" for professional/clean layouts, "icon-left" for detailed service descriptions.
 - Testimonials: "grid" for 3+ testimonials, "single-featured" when you have one powerful quote, "alternating" for a more editorial feel.
 - StatsBar: "inline" for compact stats between sections, "cards" for emphasized metrics, "bordered" for a classic look.
+- ContactCTA: "split" when contact info (phone/email/address) is available alongside a form — creates a professional two-column layout. "centered" for a simple form-focused layout. "minimal" when no form is needed, just contact details with a CTA.
 - sectionPadding: Use "compact" for stats bars, logo bars, and transitions. Use "spacious" for hero and CTA sections to create breathing room. Use "default" for most content sections. Varying padding between sections creates visual rhythm.
 
 CONTENT MAPPING:
@@ -225,7 +226,7 @@ CONTENT MAPPING:
 - Use the brief's people for teamGrid blocks
 - Use the brief's pricingTiers for pricingGrid blocks
 - Use the brief's faqItems for faq blocks
-- Use the brief's contact info for contactCTA blocks
+- Use the brief's contact info for contactCTA blocks — always populate phone, email, address, and hours fields from the brief when available
 
 For icons in serviceGrid, use Lucide icon names like: "briefcase", "shield", "zap", "heart", "star", "clock", "phone", "mail", "map-pin", "users", "settings", "home", "globe", "wrench", "building", "truck", "leaf", "camera", "code", "palette".
 
