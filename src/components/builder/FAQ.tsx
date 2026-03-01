@@ -6,6 +6,7 @@ import { getTemplateStyles, getSectionPadding } from "@/lib/templates";
 import { cn } from "@/lib/utils";
 import { ChevronDown } from "lucide-react";
 import EditableText from "./EditableText";
+import ScrollReveal from "./ScrollReveal";
 
 export default function FAQ({ block, template }: { block: FAQBlock; template: TemplateStyle }) {
   const t = getTemplateStyles(template);
@@ -17,7 +18,7 @@ export default function FAQ({ block, template }: { block: FAQBlock; template: Te
       style={{ backgroundColor: block.bgColor || "transparent" }}
     >
       <div className="max-w-3xl mx-auto">
-        <div className="text-center mb-12">
+        <ScrollReveal className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
             <EditableText field="title">{block.title}</EditableText>
           </h2>
@@ -26,38 +27,40 @@ export default function FAQ({ block, template }: { block: FAQBlock; template: Te
               <EditableText field="subtitle">{block.subtitle}</EditableText>
             </p>
           )}
-        </div>
+        </ScrollReveal>
         <div className="space-y-3">
           {block.items.map((item, i) => {
             const isOpen = openIndex === i;
             return (
-              <div key={i} className={cn("overflow-hidden", t.card)}>
-                <button
-                  onClick={() => setOpenIndex(isOpen ? null : i)}
-                  className="w-full flex items-center justify-between px-5 py-4 text-left text-sm font-medium hover:bg-white/[0.03] transition-colors"
-                >
-                  <span>
-                    <EditableText field={`items.${i}.question`}>{item.question}</EditableText>
-                  </span>
-                  <ChevronDown
-                    size={16}
-                    className={`shrink-0 ml-3 transition-transform duration-200 ${
-                      isOpen ? "rotate-180" : ""
+              <ScrollReveal key={i} delay={i * 60}>
+                <div className={cn("overflow-hidden", t.card)}>
+                  <button
+                    onClick={() => setOpenIndex(isOpen ? null : i)}
+                    className="w-full flex items-center justify-between px-5 py-4 text-left text-sm font-medium hover:bg-white/[0.03] transition-colors"
+                  >
+                    <span>
+                      <EditableText field={`items.${i}.question`}>{item.question}</EditableText>
+                    </span>
+                    <ChevronDown
+                      size={16}
+                      className={`shrink-0 ml-3 transition-transform duration-200 ${
+                        isOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                  <div
+                    className={`grid transition-all duration-300 ${
+                      isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
                     }`}
-                  />
-                </button>
-                <div
-                  className={`grid transition-all duration-300 ${
-                    isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-                  }`}
-                >
-                  <div className="overflow-hidden">
-                    <p className="px-5 pb-4 text-sm opacity-70 leading-relaxed">
-                      <EditableText field={`items.${i}.answer`} multiline>{item.answer}</EditableText>
-                    </p>
+                  >
+                    <div className="overflow-hidden">
+                      <p className="px-5 pb-4 text-sm opacity-70 leading-relaxed">
+                        <EditableText field={`items.${i}.answer`} multiline>{item.answer}</EditableText>
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </ScrollReveal>
             );
           })}
         </div>

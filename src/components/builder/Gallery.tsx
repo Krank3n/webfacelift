@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import Image from "next/image";
 import EditableText from "./EditableText";
 import EditableImage from "./EditableImage";
+import ScrollReveal from "./ScrollReveal";
 
 export default function Gallery({ block, template }: { block: GalleryBlock; template: TemplateStyle }) {
   const t = getTemplateStyles(template);
@@ -24,7 +25,7 @@ export default function Gallery({ block, template }: { block: GalleryBlock; temp
     >
       <div className="max-w-6xl mx-auto">
         {(block.title || block.subtitle) && (
-          <div className="text-center mb-12">
+          <ScrollReveal className="text-center mb-12">
             {block.title && (
               <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
                 <EditableText field="title">{block.title}</EditableText>
@@ -35,23 +36,24 @@ export default function Gallery({ block, template }: { block: GalleryBlock; temp
                 <EditableText field="subtitle">{block.subtitle}</EditableText>
               </p>
             )}
-          </div>
+          </ScrollReveal>
         )}
         <div className={`grid ${gridClass} gap-4`}>
           {block.images.map((img, i) => (
-            <div
-              key={i}
-              className={`group relative aspect-[4/3] rounded-xl overflow-hidden ${t.card}`}
-            >
-              <Image
-                src={img.url}
-                alt={img.alt || "Gallery image"}
-                fill
-                className="object-cover transition-transform duration-500 group-hover:scale-110"
-                unoptimized
-              />
-              <EditableImage field={`images.${i}.url`} currentSrc={img.url} />
-            </div>
+            <ScrollReveal key={i} delay={i * 80}>
+              <div
+                className={`group relative aspect-[4/3] rounded-xl overflow-hidden ${t.card}`}
+              >
+                <Image
+                  src={img.url}
+                  alt={img.alt || "Gallery image"}
+                  fill
+                  className="object-cover transition-transform duration-500 group-hover:scale-110"
+                  unoptimized
+                />
+                <EditableImage field={`images.${i}.url`} currentSrc={img.url} />
+              </div>
+            </ScrollReveal>
           ))}
         </div>
       </div>

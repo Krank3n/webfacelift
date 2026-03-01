@@ -181,7 +181,7 @@ function BlockWrapper({
   return (
     <div
       id={sectionId}
-      className="relative group"
+      className="relative group/block"
       style={autoText ? { color: autoText } : undefined}
       onMouseEnter={isEditing ? () => setHoveredBlockIndex(index) : undefined}
       onMouseLeave={isEditing ? () => setHoveredBlockIndex(null) : undefined}

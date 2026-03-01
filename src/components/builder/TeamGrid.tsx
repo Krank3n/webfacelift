@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import Image from "next/image";
 import EditableText from "./EditableText";
 import EditableImage from "./EditableImage";
+import ScrollReveal from "./ScrollReveal";
 
 export default function TeamGrid({ block, template }: { block: TeamGridBlock; template: TemplateStyle }) {
   const t = getTemplateStyles(template);
@@ -23,7 +24,7 @@ export default function TeamGrid({ block, template }: { block: TeamGridBlock; te
       style={{ backgroundColor: block.bgColor || "transparent" }}
     >
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-12">
+        <ScrollReveal className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
             <EditableText field="title">{block.title}</EditableText>
           </h2>
@@ -32,39 +33,41 @@ export default function TeamGrid({ block, template }: { block: TeamGridBlock; te
               <EditableText field="subtitle">{block.subtitle}</EditableText>
             </p>
           )}
-        </div>
+        </ScrollReveal>
         <div className={`grid ${gridClass} gap-6`}>
           {block.members.map((member, i) => (
-            <div key={i} className={cn("p-6 text-center", t.card, t.cardHover)}>
-              {member.image ? (
-                <div className="relative w-20 h-20 mx-auto rounded-full overflow-hidden mb-4">
-                  <Image
-                    src={member.image}
-                    alt={member.name}
-                    fill
-                    className="object-cover"
-                    unoptimized
-                  />
-                  <EditableImage field={`members.${i}.image`} currentSrc={member.image} />
-                </div>
-              ) : (
-                <div className="relative w-20 h-20 mx-auto rounded-full bg-white/10 flex items-center justify-center text-xl font-bold mb-4 opacity-60">
-                  {member.name.charAt(0)}
-                  <EditableImage field={`members.${i}.image`} currentSrc={undefined} />
-                </div>
-              )}
-              <h3 className="text-lg font-semibold">
-                <EditableText field={`members.${i}.name`}>{member.name}</EditableText>
-              </h3>
-              <p className="text-sm opacity-60 mt-1">
-                <EditableText field={`members.${i}.role`}>{member.role}</EditableText>
-              </p>
-              {member.bio && (
-                <p className="text-sm opacity-50 mt-3 leading-relaxed line-clamp-3">
-                  <EditableText field={`members.${i}.bio`} multiline>{member.bio}</EditableText>
+            <ScrollReveal key={i} delay={i * 80}>
+              <div className={cn("p-6 text-center h-full", t.card, t.cardHover)}>
+                {member.image ? (
+                  <div className="relative w-20 h-20 mx-auto rounded-full overflow-hidden mb-4">
+                    <Image
+                      src={member.image}
+                      alt={member.name}
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
+                    <EditableImage field={`members.${i}.image`} currentSrc={member.image} />
+                  </div>
+                ) : (
+                  <div className="relative w-20 h-20 mx-auto rounded-full bg-white/10 flex items-center justify-center text-xl font-bold mb-4 opacity-60">
+                    {member.name.charAt(0)}
+                    <EditableImage field={`members.${i}.image`} currentSrc={undefined} />
+                  </div>
+                )}
+                <h3 className="text-lg font-semibold">
+                  <EditableText field={`members.${i}.name`}>{member.name}</EditableText>
+                </h3>
+                <p className="text-sm opacity-60 mt-1">
+                  <EditableText field={`members.${i}.role`}>{member.role}</EditableText>
                 </p>
-              )}
-            </div>
+                {member.bio && (
+                  <p className="text-sm opacity-50 mt-3 leading-relaxed line-clamp-3">
+                    <EditableText field={`members.${i}.bio`} multiline>{member.bio}</EditableText>
+                  </p>
+                )}
+              </div>
+            </ScrollReveal>
           ))}
         </div>
       </div>

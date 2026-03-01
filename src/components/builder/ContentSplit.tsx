@@ -7,6 +7,7 @@ import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 import EditableText from "./EditableText";
 import EditableImage from "./EditableImage";
+import ScrollReveal from "./ScrollReveal";
 
 
 export default function ContentSplit({ block, template }: { block: ContentSplitBlock; template: TemplateStyle }) {
@@ -24,7 +25,7 @@ export default function ContentSplit({ block, template }: { block: ContentSplitB
         }`}
       >
         {/* Text side */}
-        <div className={isLeft ? "" : "md:[direction:ltr]"}>
+        <ScrollReveal className={isLeft ? "" : "md:[direction:ltr]"}>
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight leading-tight">
             <EditableText field="heading">{block.heading}</EditableText>
           </h2>
@@ -43,10 +44,10 @@ export default function ContentSplit({ block, template }: { block: ContentSplitB
               <ArrowRight size={16} />
             </a>
           )}
-        </div>
+        </ScrollReveal>
 
         {/* Image side */}
-        <div className={isLeft ? "" : "md:[direction:ltr]"}>
+        <ScrollReveal delay={150} className={isLeft ? "" : "md:[direction:ltr]"}>
           {block.image ? (
             <div className={cn("relative aspect-[4/3] overflow-hidden bg-white/5", t.imageShadow)}>
               <Image
@@ -65,7 +66,7 @@ export default function ContentSplit({ block, template }: { block: ContentSplitB
               t.imageShadow
             )} />
           )}
-        </div>
+        </ScrollReveal>
       </div>
     </section>
   );

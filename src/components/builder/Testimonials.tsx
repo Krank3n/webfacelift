@@ -7,6 +7,7 @@ import { Quote } from "lucide-react";
 import Image from "next/image";
 import EditableText from "./EditableText";
 import EditableImage from "./EditableImage";
+import ScrollReveal from "./ScrollReveal";
 
 function AuthorInfo({ item, index }: { item: TestimonialsBlock["items"][number]; index: number }) {
   return (
@@ -51,12 +52,14 @@ export default function Testimonials({ block, template }: { block: TestimonialsB
       style={{ backgroundColor: block.bgColor || "transparent" }}
     >
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-center mb-12">
-          <EditableText field="title">{block.title}</EditableText>
-        </h2>
+        <ScrollReveal>
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-center mb-12">
+            <EditableText field="title">{block.title}</EditableText>
+          </h2>
+        </ScrollReveal>
 
         {variant === "single-featured" ? (
-          <div className="max-w-3xl mx-auto">
+          <ScrollReveal className="max-w-3xl mx-auto">
             {block.items.length > 0 && (
               <div className={cn("p-8 md:p-12 text-center", t.quoteCard)}>
                 <Quote size={32} className={cn("mx-auto mb-6", t.accentTextMuted)} />
@@ -68,18 +71,35 @@ export default function Testimonials({ block, template }: { block: TestimonialsB
                 </div>
               </div>
             )}
-          </div>
+          </ScrollReveal>
         ) : variant === "alternating" ? (
           <div className="max-w-4xl mx-auto space-y-8">
             {block.items.map((item, i) => (
-              <div
-                key={i}
-                className={cn(
-                  "flex",
-                  i % 2 === 0 ? "justify-start" : "justify-end"
-                )}
-              >
-                <div className={cn("p-6 max-w-xl", t.quoteCard)}>
+              <ScrollReveal key={i} delay={i * 100}>
+                <div
+                  className={cn(
+                    "flex",
+                    i % 2 === 0 ? "justify-start" : "justify-end"
+                  )}
+                >
+                  <div className={cn("p-6 max-w-xl", t.quoteCard)}>
+                    <Quote size={20} className={cn("mb-4", t.accentTextMuted)} />
+                    <p className="opacity-80 text-sm leading-relaxed italic">
+                      &ldquo;<EditableText field={`items.${i}.quote`} multiline>{item.quote}</EditableText>&rdquo;
+                    </p>
+                    <div className="mt-4 pt-4 border-t border-white/10">
+                      <AuthorInfo item={item} index={i} />
+                    </div>
+                  </div>
+                </div>
+              </ScrollReveal>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {block.items.map((item, i) => (
+              <ScrollReveal key={i} delay={i * 80}>
+                <div className={cn("p-6 h-full", t.quoteCard)}>
                   <Quote size={20} className={cn("mb-4", t.accentTextMuted)} />
                   <p className="opacity-80 text-sm leading-relaxed italic">
                     &ldquo;<EditableText field={`items.${i}.quote`} multiline>{item.quote}</EditableText>&rdquo;
@@ -88,24 +108,7 @@ export default function Testimonials({ block, template }: { block: TestimonialsB
                     <AuthorInfo item={item} index={i} />
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {block.items.map((item, i) => (
-              <div
-                key={i}
-                className={cn("p-6", t.quoteCard)}
-              >
-                <Quote size={20} className={cn("mb-4", t.accentTextMuted)} />
-                <p className="opacity-80 text-sm leading-relaxed italic">
-                  &ldquo;<EditableText field={`items.${i}.quote`} multiline>{item.quote}</EditableText>&rdquo;
-                </p>
-                <div className="mt-4 pt-4 border-t border-white/10">
-                  <AuthorInfo item={item} index={i} />
-                </div>
-              </div>
+              </ScrollReveal>
             ))}
           </div>
         )}

@@ -5,6 +5,7 @@ import { getTemplateStyles, getSectionPadding } from "@/lib/templates";
 import { cn } from "@/lib/utils";
 import { Send, Phone, Mail, MapPin, Clock } from "lucide-react";
 import EditableText from "./EditableText";
+import ScrollReveal from "./ScrollReveal";
 
 /* ── Contact info items ──────────────────────────── */
 
@@ -189,7 +190,7 @@ function SplitVariant({
     <div className="max-w-6xl mx-auto">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-start">
         {/* Left – Info side */}
-        <div className="space-y-8">
+        <ScrollReveal className="space-y-8">
           <div>
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight leading-tight">
               <EditableText field="heading">{block.heading}</EditableText>
@@ -208,28 +209,30 @@ function SplitVariant({
               <ContactInfoItems block={block} template={template} />
             </div>
           )}
-        </div>
+        </ScrollReveal>
 
         {/* Right – Form side */}
-        {block.showForm ? (
-          <div className={cn("p-6 md:p-8", t.card)}>
-            <ContactForm block={block} template={template} />
-          </div>
-        ) : (
-          <div className="flex items-center justify-center">
-            <button
-              className={cn(
-                "inline-flex items-center gap-2.5 px-8 py-4 font-semibold",
-                t.buttonPrimary
-              )}
-            >
-              <EditableText field="buttonText">
-                {block.buttonText || "Get In Touch"}
-              </EditableText>
-              <Send size={16} />
-            </button>
-          </div>
-        )}
+        <ScrollReveal delay={150}>
+          {block.showForm ? (
+            <div className={cn("p-6 md:p-8", t.card)}>
+              <ContactForm block={block} template={template} />
+            </div>
+          ) : (
+            <div className="flex items-center justify-center">
+              <button
+                className={cn(
+                  "inline-flex items-center gap-2.5 px-8 py-4 font-semibold",
+                  t.buttonPrimary
+                )}
+              >
+                <EditableText field="buttonText">
+                  {block.buttonText || "Get In Touch"}
+                </EditableText>
+                <Send size={16} />
+              </button>
+            </div>
+          )}
+        </ScrollReveal>
       </div>
     </div>
   );
@@ -249,7 +252,7 @@ function CenteredVariant({
 
   return (
     <div className="max-w-3xl mx-auto">
-      <div className="text-center mb-10">
+      <ScrollReveal className="text-center mb-10">
         <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight">
           <EditableText field="heading">{block.heading}</EditableText>
         </h2>
@@ -260,28 +263,32 @@ function CenteredVariant({
             </EditableText>
           </p>
         )}
-      </div>
+      </ScrollReveal>
 
       {block.showForm && (
-        <div className={cn("p-6 md:p-8", t.card)}>
-          <ContactForm block={block} template={template} />
-        </div>
+        <ScrollReveal delay={100}>
+          <div className={cn("p-6 md:p-8", t.card)}>
+            <ContactForm block={block} template={template} />
+          </div>
+        </ScrollReveal>
       )}
 
       {!block.showForm && (
-        <div className="flex justify-center">
-          <button
-            className={cn(
-              "inline-flex items-center gap-2.5 px-8 py-4 font-semibold",
-              t.buttonPrimary
-            )}
-          >
-            <EditableText field="buttonText">
-              {block.buttonText || "Get In Touch"}
-            </EditableText>
-            <Send size={16} />
-          </button>
-        </div>
+        <ScrollReveal delay={100}>
+          <div className="flex justify-center">
+            <button
+              className={cn(
+                "inline-flex items-center gap-2.5 px-8 py-4 font-semibold",
+                t.buttonPrimary
+              )}
+            >
+              <EditableText field="buttonText">
+                {block.buttonText || "Get In Touch"}
+              </EditableText>
+              <Send size={16} />
+            </button>
+          </div>
+        </ScrollReveal>
       )}
 
       {hasContactInfo && (
@@ -392,7 +399,7 @@ function MinimalVariant({
   const t = getTemplateStyles(template);
 
   return (
-    <div className="max-w-4xl mx-auto text-center">
+    <ScrollReveal className="max-w-4xl mx-auto text-center">
       <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight">
         <EditableText field="heading">{block.heading}</EditableText>
       </h2>
@@ -469,7 +476,7 @@ function MinimalVariant({
           <Send size={16} />
         </button>
       </div>
-    </div>
+    </ScrollReveal>
   );
 }
 

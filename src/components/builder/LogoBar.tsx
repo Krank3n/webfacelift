@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import Image from "next/image";
 import EditableText from "./EditableText";
 import EditableImage from "./EditableImage";
+import ScrollReveal from "./ScrollReveal";
 
 export default function LogoBar({ block }: { block: LogoBarBlock; template: TemplateStyle }) {
   return (
@@ -13,7 +14,7 @@ export default function LogoBar({ block }: { block: LogoBarBlock; template: Temp
       className={cn("w-full px-6", getSectionPadding(block.sectionPadding || "compact"))}
       style={{ backgroundColor: block.bgColor || "transparent" }}
     >
-      <div className="max-w-6xl mx-auto">
+      <ScrollReveal className="max-w-6xl mx-auto">
         {block.title && (
           <p className="text-center text-sm font-medium opacity-40 uppercase tracking-wider mb-8">
             <EditableText field="title">{block.title}</EditableText>
@@ -36,7 +37,7 @@ export default function LogoBar({ block }: { block: LogoBarBlock; template: Temp
             </div>
           ))}
         </div>
-      </div>
+      </ScrollReveal>
     </section>
   );
 }

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import EditableText from "./EditableText";
+import ScrollReveal from "./ScrollReveal";
 
 const iconMap: Record<string, LucideIcon> = {
   briefcase: Briefcase, shield: Shield, zap: Zap, heart: Heart,
@@ -40,7 +41,7 @@ export default function ServiceGrid({ block, template }: { block: ServiceGridBlo
       style={{ backgroundColor: block.bgColor || "transparent" }}
     >
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-12">
+        <ScrollReveal className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
             <EditableText field="title">{block.title}</EditableText>
           </h2>
@@ -49,30 +50,28 @@ export default function ServiceGrid({ block, template }: { block: ServiceGridBlo
               <EditableText field="subtitle">{block.subtitle}</EditableText>
             </p>
           )}
-        </div>
+        </ScrollReveal>
 
         {variant === "minimal-list" ? (
           <div className="max-w-3xl mx-auto divide-y divide-white/[0.06]">
             {block.services.map((service, i) => {
               const Icon = getIcon(service.icon);
               return (
-                <div
-                  key={i}
-                  className="group flex items-start gap-4 py-6 animate-fade-in-up"
-                  style={{ animationDelay: `${i * 100}ms` }}
-                >
-                  <div className={cn("w-10 h-10 flex items-center justify-center shrink-0 mt-0.5", t.iconBox)}>
-                    <Icon size={20} className="opacity-80" />
+                <ScrollReveal key={i} delay={i * 80}>
+                  <div className="group flex items-start gap-4 py-6">
+                    <div className={cn("w-10 h-10 flex items-center justify-center shrink-0 mt-0.5", t.iconBox)}>
+                      <Icon size={20} className="opacity-80" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold">
+                        <EditableText field={`services.${i}.title`}>{service.title}</EditableText>
+                      </h3>
+                      <p className="text-sm opacity-60 leading-relaxed mt-1">
+                        <EditableText field={`services.${i}.description`} multiline>{service.description}</EditableText>
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-semibold">
-                      <EditableText field={`services.${i}.title`}>{service.title}</EditableText>
-                    </h3>
-                    <p className="text-sm opacity-60 leading-relaxed mt-1">
-                      <EditableText field={`services.${i}.description`} multiline>{service.description}</EditableText>
-                    </p>
-                  </div>
-                </div>
+                </ScrollReveal>
               );
             })}
           </div>
@@ -81,23 +80,21 @@ export default function ServiceGrid({ block, template }: { block: ServiceGridBlo
             {block.services.map((service, i) => {
               const Icon = getIcon(service.icon);
               return (
-                <div
-                  key={i}
-                  className={cn("group flex items-start gap-4 p-6", t.card, t.cardHover, "animate-fade-in-up")}
-                  style={{ animationDelay: `${i * 100}ms` }}
-                >
-                  <div className={cn("w-10 h-10 flex items-center justify-center shrink-0", t.iconBox)}>
-                    <Icon size={20} className="opacity-80 group-hover:scale-110 transition-transform duration-300" />
+                <ScrollReveal key={i} delay={i * 80}>
+                  <div className={cn("group flex items-start gap-4 p-6 h-full", t.card, t.cardHover)}>
+                    <div className={cn("w-10 h-10 flex items-center justify-center shrink-0", t.iconBox)}>
+                      <Icon size={20} className="opacity-80 group-hover:scale-110 transition-transform duration-300" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold mb-1">
+                        <EditableText field={`services.${i}.title`}>{service.title}</EditableText>
+                      </h3>
+                      <p className="text-sm opacity-60 leading-relaxed">
+                        <EditableText field={`services.${i}.description`} multiline>{service.description}</EditableText>
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-semibold mb-1">
-                      <EditableText field={`services.${i}.title`}>{service.title}</EditableText>
-                    </h3>
-                    <p className="text-sm opacity-60 leading-relaxed">
-                      <EditableText field={`services.${i}.description`} multiline>{service.description}</EditableText>
-                    </p>
-                  </div>
-                </div>
+                </ScrollReveal>
               );
             })}
           </div>
@@ -106,21 +103,19 @@ export default function ServiceGrid({ block, template }: { block: ServiceGridBlo
             {block.services.map((service, i) => {
               const Icon = getIcon(service.icon);
               return (
-                <div
-                  key={i}
-                  className={cn("group p-6", t.card, t.cardHover, "animate-fade-in-up")}
-                  style={{ animationDelay: `${i * 100}ms` }}
-                >
-                  <div className={cn("w-10 h-10 flex items-center justify-center mb-4", t.iconBox)}>
-                    <Icon size={20} className="opacity-80 group-hover:scale-110 transition-transform duration-300" />
+                <ScrollReveal key={i} delay={i * 80}>
+                  <div className={cn("group p-6 h-full", t.card, t.cardHover)}>
+                    <div className={cn("w-10 h-10 flex items-center justify-center mb-4", t.iconBox)}>
+                      <Icon size={20} className="opacity-80 group-hover:scale-110 transition-transform duration-300" />
+                    </div>
+                    <h3 className="text-lg font-semibold mb-2">
+                      <EditableText field={`services.${i}.title`}>{service.title}</EditableText>
+                    </h3>
+                    <p className="text-sm opacity-60 leading-relaxed">
+                      <EditableText field={`services.${i}.description`} multiline>{service.description}</EditableText>
+                    </p>
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">
-                    <EditableText field={`services.${i}.title`}>{service.title}</EditableText>
-                  </h3>
-                  <p className="text-sm opacity-60 leading-relaxed">
-                    <EditableText field={`services.${i}.description`} multiline>{service.description}</EditableText>
-                  </p>
-                </div>
+                </ScrollReveal>
               );
             })}
           </div>
