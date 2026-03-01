@@ -23,6 +23,7 @@ interface ScrapeResult {
   extractedImages?: string[];
   extractedVideos?: string[];
   extractedColors?: string[];
+  extractedLanguages?: { code: string; label: string }[];
   internalLinks?: string[];
   error?: string;
 }
@@ -34,6 +35,7 @@ interface MultiPageScrapeResult {
   allImages: string[];
   allVideos: string[];
   allColors: string[];
+  detectedLanguages: { code: string; label: string }[];
   discoveredUrls: string[];
   error?: string;
 }
@@ -235,6 +237,54 @@ function extractCssColors(html: string): string[] {
 }
 
 /* ================================================================== */
+/*  Language detection — detect multi-language sites                    */
+/* ================================================================== */
+
+const LANGUAGE_LABELS: Record<string, string> = {
+  en: "English", es: "Spanish", fr: "French", de: "German", pt: "Portuguese",
+  it: "Italian", nl: "Dutch", ru: "Russian", zh: "Chinese", ja: "Japanese",
+  ko: "Korean", ar: "Arabic", hi: "Hindi", he: "Hebrew", pl: "Polish",
+  sv: "Swedish", da: "Danish", no: "Norwegian", fi: "Finnish", tr: "Turkish",
+};
+
+function extractLanguages(html: string): { code: string; label: string }[] {
+  const codes = new Set<string>();
+
+  // 1. <html lang="xx"> or <html lang="xx-YY">
+  const htmlLangMatch = html.match(/<html[^>]+lang=["']([a-z]{2})(?:-[a-zA-Z]+)?["']/i);
+  if (htmlLangMatch) codes.add(htmlLangMatch[1].toLowerCase());
+
+  // 2. <link rel="alternate" hreflang="xx">
+  const hreflangRegex = /hreflang=["']([a-z]{2})(?:-[a-zA-Z]+)?["']/gi;
+  let match: RegExpExecArray | null;
+  while ((match = hreflangRegex.exec(html)) !== null) {
+    const code = match[1].toLowerCase();
+    if (code !== "x") codes.add(code); // skip x-default
+  }
+
+  // 3. URL patterns in navigation links: /en/, /es/, etc.
+  const langPathRegex = /href=["'][^"']*\/([a-z]{2})\/[^"']*["']/gi;
+  while ((match = langPathRegex.exec(html)) !== null) {
+    const code = match[1].toLowerCase();
+    if (LANGUAGE_LABELS[code]) codes.add(code);
+  }
+
+  // 4. Language switcher elements (common patterns)
+  const switcherRegex = /(?:lang|language|locale)["'\s=:]+["']?([a-z]{2})(?:-[a-zA-Z]+)?["']?/gi;
+  while ((match = switcherRegex.exec(html)) !== null) {
+    const code = match[1].toLowerCase();
+    if (LANGUAGE_LABELS[code]) codes.add(code);
+  }
+
+  if (codes.size < 2) return [];
+
+  return [...codes].map((code) => ({
+    code,
+    label: LANGUAGE_LABELS[code] || code.toUpperCase(),
+  }));
+}
+
+/* ================================================================== */
 /*  OG image extraction                                                */
 /* ================================================================== */
 
@@ -353,6 +403,7 @@ async function fetchPage(url: string, timeout = 15000): Promise<ScrapeResult> {
     const extractedImages = [...new Set([...ogImages, ...regularImages])];
     const extractedVideos = extractVideoUrls(html);
     const extractedColors = extractCssColors(html);
+    const extractedLanguages = extractLanguages(html);
     const internalLinks = extractInternalLinks(html, url);
 
     // Strip to plain text for markdown content
@@ -364,7 +415,7 @@ async function fetchPage(url: string, timeout = 15000): Promise<ScrapeResult> {
       .trim()
       .slice(0, 25000);
 
-    return { success: true, markdown: text, extractedImages, extractedVideos, extractedColors, internalLinks };
+    return { success: true, markdown: text, extractedImages, extractedVideos, extractedColors, extractedLanguages, internalLinks };
   } catch (err) {
     return { success: false, error: `Fetch failed: ${err instanceof Error ? err.message : "Unknown"}` };
   }
@@ -418,6 +469,9 @@ async function scrapeOnePage(url: string, apiKey: string | undefined): Promise<S
     // Extract CSS colors from rawHtml
     const extractedColors = extractCssColors(rawHtml);
 
+    // Extract languages from rawHtml
+    const extractedLanguages = extractLanguages(rawHtml);
+
     // Extract internal links from both Firecrawl links output and HTML
     const htmlLinks = extractInternalLinks(combinedContent, url);
     const allLinks = [...new Set([...firecrawlLinks, ...htmlLinks])].filter((link) => {
@@ -433,6 +487,7 @@ async function scrapeOnePage(url: string, apiKey: string | undefined): Promise<S
       extractedImages,
       extractedVideos,
       extractedColors,
+      extractedLanguages,
       internalLinks: allLinks,
     };
   } catch {
@@ -557,6 +612,7 @@ async function scrapeMultiPage(url: string): Promise<MultiPageScrapeResult> {
       allImages: [],
       allVideos: [],
       allColors: [],
+      detectedLanguages: [],
       discoveredUrls: [],
       error: homePage.error || "Failed to scrape homepage",
     };
@@ -617,6 +673,7 @@ async function scrapeMultiPage(url: string): Promise<MultiPageScrapeResult> {
     allImages,
     allVideos,
     allColors,
+    detectedLanguages: homePage.extractedLanguages || [],
     discoveredUrls: remainingDiscovered,
   };
 }
@@ -656,7 +713,7 @@ export async function scrapeAndGenerate(url: string): Promise<{
   let contentBrief: ContentBrief;
 
   // Build the user prompt with content, images, and videos
-  const buildStage1Prompt = (markdown: string, images: string[], videos: string[], colors: string[]) => {
+  const buildStage1Prompt = (markdown: string, images: string[], videos: string[], colors: string[], languages: { code: string; label: string }[]) => {
     let prompt = `Analyze the following scraped website content and produce a structured content brief as JSON.\n\nURL: ${url}\n\nSCRAPED CONTENT:\n${markdown}`;
     if (images.length > 0) {
       prompt += `\n\n=== IMAGES FOUND (${images.length}) ===\nCatalog ALL images in imageCatalog. Best photo = hero (priority 1).\n${images.map((img, i) => `${i + 1}. ${img}`).join("\n")}`;
@@ -667,14 +724,17 @@ export async function scrapeAndGenerate(url: string): Promise<{
     if (colors.length > 0) {
       prompt += `\n\n=== BRAND COLORS EXTRACTED FROM CSS ===\nThese are the actual colors used on the original website, sorted by frequency. Use these to inform your templateRecommendation and pass them through so the design guide and blueprint can match the original brand palette.\n${colors.join("\n")}`;
     }
+    if (languages.length > 0) {
+      prompt += `\n\n=== LANGUAGES DETECTED ===\nThe original site supports multiple languages. Include these in detectedLanguages.\n${languages.map((l) => `${l.code}: ${l.label}`).join("\n")}`;
+    }
     prompt += "\n\nReturn ONLY the JSON object.";
     return prompt;
   };
 
   // Try with full content, then retry with trimmed content if truncated
   const attempts = [
-    { markdown: scrapeResult.combinedMarkdown, images: scrapeResult.allImages, videos: scrapeResult.allVideos, colors: scrapeResult.allColors },
-    { markdown: scrapeResult.combinedMarkdown.slice(0, 12000), images: scrapeResult.allImages.slice(0, 12), videos: scrapeResult.allVideos.slice(0, 2), colors: scrapeResult.allColors },
+    { markdown: scrapeResult.combinedMarkdown, images: scrapeResult.allImages, videos: scrapeResult.allVideos, colors: scrapeResult.allColors, languages: scrapeResult.detectedLanguages },
+    { markdown: scrapeResult.combinedMarkdown.slice(0, 12000), images: scrapeResult.allImages.slice(0, 12), videos: scrapeResult.allVideos.slice(0, 2), colors: scrapeResult.allColors, languages: scrapeResult.detectedLanguages },
   ];
 
   let lastError = "";
@@ -684,7 +744,7 @@ export async function scrapeAndGenerate(url: string): Promise<{
         model: "claude-sonnet-4-6",
         max_tokens: 12000,
         system: CONTENT_ANALYSIS_SYSTEM_PROMPT,
-        messages: [{ role: "user", content: buildStage1Prompt(attempt.markdown, attempt.images, attempt.videos, attempt.colors) }],
+        messages: [{ role: "user", content: buildStage1Prompt(attempt.markdown, attempt.images, attempt.videos, attempt.colors, attempt.languages) }],
       });
 
       // Truncated → try again with less content

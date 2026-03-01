@@ -7,8 +7,9 @@ import Renderer from "@/components/builder/Renderer";
 import IframePreview from "./IframePreview";
 import TextEditModal from "./TextEditModal";
 import ImagePickerModal from "./ImagePickerModal";
-import { EditContext, setDeepValue } from "@/components/builder/EditableText";
-import { Monitor, Tablet, Smartphone, Pencil, Eye, Maximize, Minimize } from "lucide-react";
+import { EditContext, TranslationContext, setDeepValue } from "@/components/builder/EditableText";
+import type { TranslationContextValue } from "@/components/builder/EditableText";
+import { Monitor, Tablet, Smartphone, Pencil, Eye, Maximize, Minimize, Languages } from "lucide-react";
 
 const viewportWidths = {
   desktop: "100%",
@@ -38,6 +39,8 @@ export default function PreviewCanvas() {
   const previewMode = useProjectStore((s) => s.previewMode);
   const setPreviewMode = useProjectStore((s) => s.setPreviewMode);
   const isGenerating = useProjectStore((s) => s.isGenerating);
+  const activeLanguage = useProjectStore((s) => s.activeLanguage);
+  const setActiveLanguage = useProjectStore((s) => s.setActiveLanguage);
   const isEditing = previewMode === "edit";
   const canvasRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -72,6 +75,18 @@ export default function PreviewCanvas() {
     };
   }, [blueprint, activePageId]);
 
+  const hasMultipleLanguages = (blueprint?.languages?.length ?? 0) > 1;
+  const defaultLanguage = blueprint?.defaultLanguage ?? "en";
+
+  const translationCtx = useMemo<TranslationContextValue | null>(() => {
+    if (!blueprint?.languages || blueprint.languages.length < 2) return null;
+    return {
+      activeLanguage,
+      defaultLanguage: blueprint.defaultLanguage ?? "en",
+      translations: blueprint.translations ?? {},
+    };
+  }, [blueprint?.languages, blueprint?.defaultLanguage, blueprint?.translations, activeLanguage]);
+
   const [modal, setModal] = useState<ModalState>({
     open: false,
     path: "",
@@ -101,10 +116,19 @@ export default function PreviewCanvas() {
   const handleSaveText = useCallback(
     (path: string, newValue: string) => {
       if (!blueprint) return;
-      const updated = setDeepValue(blueprint, path, newValue);
-      pushBlueprint(updated);
+      // Non-default language: write to translations overlay
+      if (hasMultipleLanguages && activeLanguage !== defaultLanguage) {
+        const translations = structuredClone(blueprint.translations ?? {});
+        if (!translations[activeLanguage]) translations[activeLanguage] = {};
+        translations[activeLanguage][path] = newValue;
+        pushBlueprint({ ...blueprint, translations });
+      } else {
+        // Default language: write to blueprint field directly
+        const updated = setDeepValue(blueprint, path, newValue);
+        pushBlueprint(updated);
+      }
     },
-    [blueprint, pushBlueprint]
+    [blueprint, pushBlueprint, activeLanguage, defaultLanguage, hasMultipleLanguages]
   );
 
   const handleImageSelect = useCallback(
@@ -170,6 +194,28 @@ export default function PreviewCanvas() {
           </button>
         ))}
 
+        {/* Language switcher — only when multiple languages */}
+        {hasMultipleLanguages && blueprint?.languages && (
+          <>
+            <div className="w-px h-4 bg-white/10 mx-1" />
+            <Languages size={13} className="text-white/20 mx-0.5" />
+            {blueprint.languages.map((lang) => (
+              <button
+                key={lang}
+                onClick={() => setActiveLanguage(lang)}
+                className={`px-1.5 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wide transition-colors ${
+                  activeLanguage === lang
+                    ? "bg-indigo-500/20 text-indigo-400"
+                    : "text-white/30 hover:text-white/60 hover:bg-white/5"
+                }`}
+                title={`Switch to ${lang.toUpperCase()}`}
+              >
+                {lang}
+              </button>
+            ))}
+          </>
+        )}
+
         {/* Divider */}
         <div className="w-px h-4 bg-white/10 mx-1" />
 
@@ -205,9 +251,11 @@ export default function PreviewCanvas() {
             </div>
           ) : activePageBlueprint ? (
             <IframePreview>
-              <EditContext.Provider value={isEditing ? { onEditText: handleEditText, onEditImage: handleEditImage } : null}>
-                <Renderer blueprint={activePageBlueprint} />
-              </EditContext.Provider>
+              <TranslationContext.Provider value={translationCtx}>
+                <EditContext.Provider value={isEditing ? { onEditText: handleEditText, onEditImage: handleEditImage } : null}>
+                  <Renderer blueprint={activePageBlueprint} />
+                </EditContext.Provider>
+              </TranslationContext.Provider>
             </IframePreview>
           ) : (
             <div className="flex items-center justify-center h-full">

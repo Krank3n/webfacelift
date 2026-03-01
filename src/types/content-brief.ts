@@ -99,4 +99,5 @@ export interface ContentBrief {
   pricingTiers: PricingTier[];
   faqItems: FAQItem[];
   extractedBrandColors?: string[];
+  detectedLanguages?: { code: string; label: string }[];
 }

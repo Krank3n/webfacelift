@@ -37,7 +37,7 @@ export default function MediaPanel() {
       });
       toast.success("Image uploaded");
     } else {
-      toast.error("Upload failed");
+      toast.error(result.error || "Upload failed");
     }
 
     setUploading(false);

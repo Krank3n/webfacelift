@@ -77,7 +77,8 @@ OUTPUT SCHEMA (ContentBrief):
   "servicesOrProducts": [{ "name": string, "description": string, "price": string (optional), "icon": string (optional) }],
   "pricingTiers": [{ "name": string, "price": string, "period": string (optional), "features": [string], "highlighted": boolean (optional) }],
   "faqItems": [{ "question": string, "answer": string }],
-  "extractedBrandColors": [string] (optional — if brand colors were provided in the input, include the top 5-8 most relevant brand colors as hex values, excluding boring blacks/whites/grays. These are the ACTUAL colors from the original website's CSS.)
+  "extractedBrandColors": [string] (optional — if brand colors were provided in the input, include the top 5-8 most relevant brand colors as hex values, excluding boring blacks/whites/grays. These are the ACTUAL colors from the original website's CSS.),
+  "detectedLanguages": [{"code": string, "label": string}] (optional — if a === LANGUAGES DETECTED === section is provided, include ALL detected languages here. Example: [{"code": "en", "label": "English"}, {"code": "es", "label": "Spanish"}])
 }
 
 IMAGE CATALOGING RULES (CRITICAL):
@@ -238,6 +239,19 @@ For icons in serviceGrid, use Lucide icon names like: "briefcase", "shield", "za
 
 Generate a complete, modern website blueprint with at least: navbar, hero, 2-3 content sections, and a footer.
 
+MULTI-LANGUAGE SUPPORT:
+If the content brief includes "detectedLanguages" with 2 or more languages:
+1. Set "defaultLanguage" to the primary language code (e.g. "en").
+2. Set "languages" to an array of all language codes (e.g. ["en", "es"]).
+3. Set "translations" to an object keyed by non-default language codes, where each value is a flat map of dot-path keys to translated text values.
+   - Dot-path keys correspond to the JSON path within the blueprint: "layout.0.heading", "layout.0.subheading", "layout.1.title", "layout.1.services.0.title", "nicheData.tagline", etc.
+   - Only translate user-visible text strings (headings, descriptions, button text, labels, quotes, names of services, etc.)
+   - Do NOT translate: URLs, image paths, hex colors, icon names, structural data (type, variant, alignment), or field names.
+   - Generate natural, fluent translations — not word-for-word machine translations.
+   - Example: { "es": { "layout.0.heading": "Bienvenidos", "layout.0.subheading": "Tu destino de aventura", "layout.0.ctaText": "Reservar Ahora" } }
+4. If the original scraped content contained text in the non-default language, use that text directly rather than translating from English.
+If "detectedLanguages" is absent or has only 1 language, omit defaultLanguage, languages, and translations.
+
 DESIGN GUIDE INSTRUCTIONS:
 If a === DESIGN GUIDE FROM SENIOR DESIGNER === section is included in the user message, you MUST follow it closely:
 - Follow the exact section ordering specified in the guide
@@ -310,6 +324,14 @@ SECTION PADDING:
 Most blocks support "sectionPadding": "compact" | "default" | "spacious" to control vertical spacing.
 - When users ask for more/less space, tighter layout, or breathing room — adjust sectionPadding.
 - When users ask to change the hero layout (e.g., "make the hero left-aligned", "split hero with image") — update the hero variant.
+
+MULTI-LANGUAGE EDITING:
+If the blueprint has "languages" with 2+ entries and a "translations" object:
+- When the user asks to change text in a specific language (e.g., "change the Spanish heading to X"), update the corresponding entry in translations[langCode][path].
+- When the user asks to add a new language, add its code to "languages" and generate a full translations overlay for it.
+- When the user asks to remove a language, remove its code from "languages" and delete its entry from "translations".
+- When the user edits default-language text (or doesn't specify a language), update the main blueprint field directly (existing behavior).
+- The translations object uses dot-path keys like "layout.0.heading", "nicheData.tagline", etc.
 
 RESPONSE FORMAT:
 {

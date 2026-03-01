@@ -69,6 +69,7 @@ interface ProjectStore {
   activePageId: string | null;
   generatingPageUrl: string | null;
   permission: SharePermission | null;
+  activeLanguage: string;
 
   setProjectId: (id: string) => void;
   setOriginalUrl: (url: string) => void;
@@ -94,6 +95,7 @@ interface ProjectStore {
   renamePage: (pageId: string, name: string) => void;
   setGeneratingPageUrl: (url: string | null) => void;
   markPageGenerated: (url: string) => void;
+  setActiveLanguage: (lang: string) => void;
   reset: () => void;
 }
 
@@ -114,6 +116,7 @@ const initialState = {
   activePageId: null as string | null,
   generatingPageUrl: null as string | null,
   permission: null as SharePermission | null,
+  activeLanguage: "en",
 };
 
 export const useProjectStore = create<ProjectStore>((set) => ({
@@ -202,6 +205,7 @@ export const useProjectStore = create<ProjectStore>((set) => ({
         },
       };
     }),
+  setActiveLanguage: (lang) => set({ activeLanguage: lang }),
   setGeneratingPageUrl: (url) => set({ generatingPageUrl: url }),
   markPageGenerated: (url) =>
     set((s) => {

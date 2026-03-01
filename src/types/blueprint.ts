@@ -205,6 +205,9 @@ export interface BlueprintState {
   nicheData?: NicheBusinessData;
   pages?: BlueprintPage[];
   discoveredPages?: DiscoveredPage[];
+  defaultLanguage?: string;
+  languages?: string[];
+  translations?: Record<string, Record<string, string>>;
 }
 
 export interface ChatMessage {

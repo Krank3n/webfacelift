@@ -10,6 +10,15 @@ export interface EditContextValue {
 
 export const EditContext = createContext<EditContextValue | null>(null);
 
+// ── Context for translation resolution (provided by PreviewCanvas) ──
+export interface TranslationContextValue {
+  activeLanguage: string;
+  defaultLanguage: string;
+  translations: Record<string, Record<string, string>>;
+}
+
+export const TranslationContext = createContext<TranslationContextValue | null>(null);
+
 // ── Context for the path prefix (provided by Renderer's BlockWrapper / niche path) ──
 export const EditPathContext = createContext<string>("");
 
@@ -63,14 +72,25 @@ export default function EditableText({
 }) {
   const ctx = useContext(EditContext);
   const prefix = useContext(EditPathContext);
+  const translationCtx = useContext(TranslationContext);
 
   // If no edit context is provided, render children as-is (e.g. export/static)
-  if (!ctx) return <>{children}</>;
+  if (!ctx) {
+    // Still resolve translations for preview/export mode
+    if (translationCtx) {
+      const fp = path ?? (prefix ? `${prefix}.${field}` : field ?? "");
+      const translated = resolveTranslation(translationCtx, fp);
+      if (translated !== undefined) return <>{translated}</>;
+    }
+    return <>{children}</>;
+  }
 
   const fullPath = path ?? (prefix ? `${prefix}.${field}` : field ?? "");
 
-  // Use explicit value if provided, otherwise extract from children
-  const text = value ?? extractText(children);
+  // Resolve translated text if viewing a non-default language
+  const translated = resolveTranslation(translationCtx, fullPath);
+  const originalText = value ?? extractText(children);
+  const displayText = translated ?? originalText;
 
   return (
     <span
@@ -80,19 +100,28 @@ export default function EditableText({
       onClick={(e) => {
         e.stopPropagation();
         e.preventDefault();
-        ctx.onEditText(fullPath, text, multiline);
+        ctx.onEditText(fullPath, displayText, multiline);
       }}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.stopPropagation();
           e.preventDefault();
-          ctx.onEditText(fullPath, text, multiline);
+          ctx.onEditText(fullPath, displayText, multiline);
         }
       }}
     >
-      {children}
+      {translated !== undefined ? translated : children}
     </span>
   );
+}
+
+function resolveTranslation(
+  ctx: TranslationContextValue | null,
+  fullPath: string
+): string | undefined {
+  if (!ctx || !fullPath) return undefined;
+  if (ctx.activeLanguage === ctx.defaultLanguage) return undefined;
+  return ctx.translations[ctx.activeLanguage]?.[fullPath];
 }
 
 function extractText(node: ReactNode): string {

@@ -6,6 +6,7 @@ import { useProjectStore } from "@/store/project-store";
 import { uploadMedia } from "@/actions/uploadMedia";
 import Image from "next/image";
 import ModalOverlay from "@/components/ui/ModalOverlay";
+import { toast } from "sonner";
 
 interface ImagePickerModalProps {
   open: boolean;
@@ -51,6 +52,8 @@ export default function ImagePickerModal({
         if (result.success && result.url) {
           addUploadedImage(result.url);
           onSelect(path, result.url);
+        } else {
+          toast.error(result.error || "Upload failed");
         }
       } finally {
         setIsUploading(false);

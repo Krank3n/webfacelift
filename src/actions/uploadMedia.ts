@@ -31,6 +31,7 @@ export async function uploadMedia(formData: FormData): Promise<{
     .upload(fileName, file);
 
   if (error) {
+    console.error("[uploadMedia] Storage error:", error.message);
     return { success: false, error: error.message };
   }
 
