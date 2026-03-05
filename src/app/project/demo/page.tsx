@@ -75,9 +75,9 @@ function DemoWorkspaceContent() {
 
     if (!blueprint) {
       const saved = loadDemoFromSession();
-      if (saved) {
+      if (saved?.blueprint) {
         setBlueprint(saved.blueprint);
-        setChatMessages(saved.chatMessages);
+        setChatMessages(saved.chatMessages || []);
         if (saved.originalUrl) setOriginalUrl(saved.originalUrl);
       }
     }
@@ -180,7 +180,9 @@ function DemoWorkspaceContent() {
           <div className="h-full overflow-auto p-4">
             <pre className="text-[11px] text-white/40 font-mono leading-relaxed whitespace-pre-wrap break-all">
               {blueprint
-                ? JSON.stringify(blueprint, null, 2)
+                ? (blueprint.mode === "code" && blueprint.code
+                    ? blueprint.code
+                    : JSON.stringify(blueprint, null, 2))
                 : "No blueprint loaded"}
             </pre>
           </div>

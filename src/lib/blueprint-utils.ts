@@ -6,6 +6,10 @@ import type {
 
 export const MAX_FREE_PAGES = 5;
 
+export function isCodeMode(blueprint: BlueprintState): boolean {
+  return blueprint.mode === "code" && !!blueprint.code;
+}
+
 export function getBlueprintPages(blueprint: BlueprintState): BlueprintPage[] {
   if (blueprint.pages?.length) return blueprint.pages;
   return [
@@ -16,6 +20,7 @@ export function getBlueprintPages(blueprint: BlueprintState): BlueprintPage[] {
       layout: blueprint.layout || [],
       nicheTemplate: blueprint.nicheTemplate,
       nicheData: blueprint.nicheData,
+      code: blueprint.code,
     },
   ];
 }

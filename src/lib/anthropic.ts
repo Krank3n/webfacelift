@@ -1,9 +1,26 @@
 import Anthropic from "@anthropic-ai/sdk";
+import type { MessageCreateParamsNonStreaming } from "@anthropic-ai/sdk/resources/messages";
 import { NICHE_DETECTION_INSTRUCTIONS, NICHE_DATA_SCHEMA } from "./niche-prompts";
 
 export const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
+
+/**
+ * Stream a message and collect the full text + stop reason.
+ * Required for long-running calls (Opus + high max_tokens) that may exceed 10 min.
+ */
+export async function streamToText(
+  params: MessageCreateParamsNonStreaming
+): Promise<{ text: string; stopReason: string | null }> {
+  const stream = anthropic.messages.stream(params);
+  const finalMessage = await stream.finalMessage();
+  const textBlock = finalMessage.content.find((c) => c.type === "text");
+  return {
+    text: textBlock?.type === "text" ? textBlock.text : "",
+    stopReason: finalMessage.stop_reason,
+  };
+}
 
 // ── Stage 1: Content Analysis ──────────────────────────────────────────
 export const CONTENT_ANALYSIS_SYSTEM_PROMPT = `You are an expert content analyst for website redesign projects. Your job is to analyze scraped website content and produce a structured content brief as JSON.
@@ -236,6 +253,7 @@ CONTENT MAPPING:
 - Use the brief's contact info for contactCTA blocks — always populate phone, email, address, and hours fields from the brief when available
 
 For icons in serviceGrid, use Lucide icon names like: "briefcase", "shield", "zap", "heart", "star", "clock", "phone", "mail", "map-pin", "users", "settings", "home", "globe", "wrench", "building", "truck", "leaf", "camera", "code", "palette".
+NEVER use emoji characters (🏠 ⭐ 💼 etc.) as icon values. Only use Lucide icon name strings.
 
 Generate a complete, modern website blueprint with at least: navbar, hero, 2-3 content sections, and a footer.
 
@@ -275,6 +293,157 @@ When generating a niche template response, you MUST map images from the content 
 - Every real content image from the imageCatalog should appear somewhere in nicheData — do NOT waste scraped images.
 
 ${NICHE_DATA_SCHEMA}`;
+
+// ── Stage 2 (Code Mode): Bespoke Code Generation ─────────────────────
+export const CODE_GENERATION_SYSTEM_PROMPT = `You are an elite web designer and React developer. You generate bespoke, production-quality websites as a single self-contained React component using Tailwind CSS.
+
+You will receive a structured CONTENT BRIEF (not raw scraped content) and a design guide. Generate a complete, unique website as code.
+
+CRITICAL RULES:
+1. Return ONLY valid JSON with these keys: "siteName", "colorScheme", "font", "code".
+   - "siteName": string
+   - "colorScheme": { "primary": "#hex", "secondary": "#hex", "accent": "#hex", "background": "#hex", "text": "#hex" }
+   - "font": string (e.g. "Inter", "Geist", "Playfair Display")
+   - "code": string (the complete React component source)
+2. No markdown, no explanation, no code fences. ONLY the JSON object.
+3. The "code" value is a string containing a complete React component:
+   - Must export a default function: \`export default function App() { ... }\`
+   - Use React.useState for interactivity (mobile menu toggle, FAQ accordions, scroll-to-section)
+   - Use ONLY Tailwind CSS classes for styling — no inline styles, no CSS modules
+   - Start with exactly: \`import React from "react";\` — this is the ONLY import allowed
+   - Use \`React.useState\` for state: \`const [x, setX] = React.useState(initialValue)\`
+
+CODE QUALITY REQUIREMENTS:
+- 8-12+ distinct sections for a premium, comprehensive feel
+- Smooth scroll behavior for anchor links (implement with scrollIntoView)
+- Mobile-responsive with a hamburger menu that toggles via useState
+- Semantic HTML (header, main, section, footer)
+- Generous whitespace, bold typography, clear visual hierarchy
+- Use arbitrary Tailwind values for brand colors: \`bg-[#hex]\`, \`text-[#hex]\`, \`border-[#hex]\`
+- Hover effects, transitions, and micro-interactions via Tailwind classes
+- Gradient overlays, backdrop-blur, rounded corners for modern aesthetic
+- Each section should have a unique layout — avoid repetitive card grids
+
+ICON RULES (CRITICAL — NO EMOJIS):
+- NEVER use emoji characters (🏠 ⭐ 💼 etc.) as icons anywhere in the generated code. Emojis look unprofessional.
+- Use inline SVG icons instead. Create simple, clean SVG elements with currentColor for fill/stroke so they inherit text color.
+- For common icons, use simple path-based SVGs like:
+  \`<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>\`
+- Keep SVG icons minimal (1-2 paths). Match the style to the site's aesthetic.
+- You can create a small icons object at the top of the component for reuse if needed.
+
+IMAGE RULES (CRITICAL):
+- ONLY use image URLs from the content brief's imageCatalog. NEVER fabricate URLs.
+- Use the priority 1 image for the hero section background/feature image.
+- Use \`<img>\` tags with proper alt text and object-cover/object-center classes.
+- Add crossOrigin="anonymous" to all \`<img>\` tags.
+- Add an onError handler to gracefully hide broken images: \`onError={(e) => { e.currentTarget.style.display = 'none' }}\`
+  - The parent element should have a gradient or solid color background so content still looks good if the image fails.
+- If imageCatalog is empty, use solid color backgrounds and gradients instead.
+- NEVER use placeholder image services (placeholder.com, placehold.it, unsplash.com/random, picsum, via.placeholder, etc.).
+
+COLOR IDENTITY (CRITICAL):
+- If the content brief includes "extractedBrandColors", you MUST base your colorScheme on these actual CSS colors from the original website.
+- Pick the most prominent non-gray color as primary, a complementary one as secondary.
+- Use arbitrary Tailwind values: \`bg-[#1a2b3c]\`, \`text-[#f0e0d0]\`, etc.
+- Every site should feel unique — match the brand's personality:
+  - Construction company → navy + orange + white
+  - Law firm → navy + gold + cream
+  - Wake park → deep blue + cyan + white
+  - Bakery → warm brown + peach + cream
+  - Tech startup → electric blue + purple + dark slate
+  - Spiritual healer → deep plum + warm gold + soft cream
+- COLOR CONTRAST: Ensure text is readable against backgrounds. Dark bg → light text. Light bg → dark text.
+
+SECTION IDEAS (mix and match for variety):
+- Sticky/transparent navbar with scroll effect
+- Hero with large heading, subtext, CTA button, background image/gradient
+- Stats/metrics bar with animated counters
+- Services/features grid with inline SVG icons (NEVER use emojis)
+- About section with split layout (text + image)
+- Testimonials carousel or grid
+- Team members grid
+- Pricing tiers
+- FAQ with accordion (useState for open/close)
+- Gallery/portfolio grid
+- Contact section with form fields
+- CTA banner
+- Footer with links, social icons, copyright
+
+DESIGN GUIDE INSTRUCTIONS:
+If a === DESIGN GUIDE FROM SENIOR DESIGNER === section is included, follow it closely for section ordering, visual treatments, and creative direction.
+
+EXAMPLE CODE STRUCTURE (for reference — be creative, don't copy this exactly):
+\`\`\`
+import React from "react";
+
+export default function App() {
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  const [openFaq, setOpenFaq] = React.useState<number | null>(null);
+
+  const scrollTo = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    setMenuOpen(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-[#0a0a0a] text-white" style={{ fontFamily: "'Inter', sans-serif" }}>
+      {/* Navbar */}
+      <header className="sticky top-0 z-50 ...">...</header>
+      <main>
+        <section id="hero" className="...">...</section>
+        <section id="services" className="...">...</section>
+        {/* ... more sections ... */}
+      </main>
+      <footer className="...">...</footer>
+    </div>
+  );
+}
+\`\`\`
+
+CONTENT MAPPING:
+- Map contentSections from the brief to appropriate sections in code
+- Use the brief's testimonials, servicesOrProducts, statistics, people, pricingTiers, faqItems
+- Use the brief's contact info (phone, email, address, hours)
+- Populate real content — never use lorem ipsum`;
+
+// ── Chat Iteration (Code Mode) ───────────────────────────────────────
+export const CODE_CHAT_ITERATE_SYSTEM_PROMPT = `You are an expert web designer and React developer that modifies bespoke website code based on user requests.
+
+CRITICAL RULES:
+1. You will receive the current React component code and a user request.
+2. Apply the requested changes to the code.
+3. Return a JSON object with exactly two keys:
+   - "message": A brief, friendly description of what you changed (1-2 sentences max).
+   - "code": The complete, updated React component code as a string.
+4. Do NOT return anything except this JSON object. No markdown, no code fences.
+5. Preserve all existing content and functionality that the user didn't ask to change.
+6. Keep the design cohesive when making changes.
+
+WHAT YOU CAN MODIFY:
+- Colors: Update arbitrary Tailwind values (\`bg-[#hex]\`, \`text-[#hex]\`, etc.)
+- Layout: Change section ordering, column layouts, spacing
+- Content: Update text, headings, descriptions
+- Sections: Add new sections, remove existing ones
+- Interactivity: Add/modify useState-based interactions
+- Styling: Change gradients, shadows, borders, typography
+- Images: Swap image URLs (only use URLs the user provides or from the original brief)
+
+CODE REQUIREMENTS:
+- Must start with \`import React from "react";\` — this is the ONLY import allowed
+- Must remain a single \`export default function App()\` component
+- Use React.useState for any state
+- Use only Tailwind CSS classes
+- Maintain mobile responsiveness
+- NEVER use emoji characters as icons — use inline SVG icons with currentColor instead
+- All \`<img>\` tags must have onError={(e) => { e.currentTarget.style.display = 'none' }} and a gradient/color parent background as fallback
+- NEVER use placeholder image services (placeholder.com, unsplash.com/random, picsum, etc.)
+
+RESPONSE FORMAT:
+{
+  "message": "I've updated the hero section with a darker gradient and larger heading.",
+  "code": "export default function App() { ... }"
+}`;
 
 export const CHAT_ITERATE_SYSTEM_PROMPT = `You are an expert web designer AI that modifies website blueprints based on user requests. You act as a strict JSON state machine.
 

@@ -2,8 +2,9 @@
 
 import {
   anthropic,
+  streamToText,
   CONTENT_ANALYSIS_SYSTEM_PROMPT,
-  BLUEPRINT_SYSTEM_PROMPT,
+  CODE_GENERATION_SYSTEM_PROMPT,
 } from "@/lib/anthropic";
 import { getGeminiDesignGuide } from "@/lib/gemini";
 import type { BlueprintState } from "@/types/blueprint";
@@ -803,16 +804,16 @@ ${geminiResult.guide}
     // Silently continue — design guide is an enhancement, not a requirement
   }
 
-  // Step 4: Stage 2 — Blueprint Generation
+  // Step 4: Stage 2 — Bespoke Code Generation (streamed to avoid 10-min timeout)
   try {
-    const stage2Message = await anthropic.messages.create({
+    const { text: stage2RawText, stopReason } = await streamToText({
       model: "claude-opus-4-6",
-      max_tokens: 16384,
-      system: BLUEPRINT_SYSTEM_PROMPT,
+      max_tokens: 32768,
+      system: CODE_GENERATION_SYSTEM_PROMPT,
       messages: [
         {
           role: "user",
-          content: `Generate a complete, modern website blueprint from this content brief. Return ONLY the BlueprintState JSON object.
+          content: `Generate a complete, bespoke website as a React component from this content brief. Return ONLY the JSON object with siteName, colorScheme, font, and code keys.
 
 CONTENT BRIEF:
 ${contentBriefStr}${designGuideContext}`,
@@ -821,35 +822,37 @@ ${contentBriefStr}${designGuideContext}`,
     });
 
     // Check for truncation
-    if (stage2Message.stop_reason === "max_tokens") {
-      return { success: false, error: "Stage 2: Blueprint response was truncated." };
+    if (stopReason === "max_tokens") {
+      return { success: false, error: "Stage 2: Code generation response was truncated." };
     }
 
-    const stage2Text = stage2Message.content.find((c) => c.type === "text");
-    if (!stage2Text || stage2Text.type !== "text") {
+    if (!stage2RawText) {
       return { success: false, error: "Stage 2: No text response from AI." };
     }
 
-    let jsonStr = stage2Text.text.trim();
+    let jsonStr = stage2RawText.trim();
     if (jsonStr.startsWith("```")) {
       jsonStr = jsonStr.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
     }
 
-    const blueprint: BlueprintState = JSON.parse(jsonStr);
+    const parsed = JSON.parse(jsonStr);
 
-    // Validate: accept either niche path or block path
-    const isNichePath = blueprint.nicheTemplate && blueprint.nicheData;
-    const isBlockPath = blueprint.layout && Array.isArray(blueprint.layout) && blueprint.layout.length > 0;
-
-    if (!isNichePath && !isBlockPath) {
-      return { success: false, error: "Stage 2: Invalid blueprint: must have either nicheTemplate+nicheData or a non-empty layout array." };
+    if (!parsed.code || typeof parsed.code !== "string") {
+      return { success: false, error: "Stage 2: Invalid response: missing code." };
     }
 
-    if (!blueprint.layout) blueprint.layout = [];
-
-    if (!blueprint.colorScheme) {
-      return { success: false, error: "Stage 2: Invalid blueprint: missing colorScheme." };
+    if (!parsed.colorScheme) {
+      return { success: false, error: "Stage 2: Invalid response: missing colorScheme." };
     }
+
+    const blueprint: BlueprintState = {
+      siteName: parsed.siteName || contentBrief.business?.name || "Website",
+      colorScheme: parsed.colorScheme,
+      font: parsed.font,
+      layout: [],
+      mode: "code",
+      code: parsed.code,
+    };
 
     // Attach discovered pages from the scrape step
     if (scrapeResult.discoveredUrls.length > 0) {
@@ -860,7 +863,7 @@ ${contentBriefStr}${designGuideContext}`,
   } catch (err) {
     return {
       success: false,
-      error: `Stage 2: Blueprint generation failed: ${err instanceof Error ? err.message : "Unknown error"}`,
+      error: `Stage 2: Code generation failed: ${err instanceof Error ? err.message : "Unknown error"}`,
     };
   }
 }

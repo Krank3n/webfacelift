@@ -1,6 +1,6 @@
 "use server";
 
-import { anthropic } from "@/lib/anthropic";
+import { anthropic, streamToText } from "@/lib/anthropic";
 import type { BlueprintState, BlueprintPage } from "@/types/blueprint";
 
 const PAGE_GENERATION_PROMPT = `You are an expert web designer AI that generates a single page layout as JSON for an existing multi-page website.
@@ -23,6 +23,24 @@ OUTPUT FORMAT:
 }
 
 Generate a complete, well-structured page with navbar, content sections, and footer.`;
+
+const CODE_PAGE_GENERATION_PROMPT = `You are an expert web designer and React developer. You generate a single page as a self-contained React component for an existing bespoke website.
+
+CRITICAL RULES:
+1. Return ONLY valid JSON with two keys: "code" (the complete React component) and "message" (brief description).
+2. No markdown, no explanation, no code fences. ONLY the JSON object.
+3. The "code" must be a complete \`export default function App()\` React component.
+4. Match the existing site's visual style, colors, typography, and design patterns.
+5. Use Tailwind CSS classes exclusively — arbitrary values for brand colors.
+6. No imports — React and useState are globally available.
+7. Use ONLY scraped content — do not invent content.
+8. NEVER fabricate image URLs.
+
+OUTPUT FORMAT:
+{
+  "code": "export default function App() { ... }",
+  "message": "Generated About page matching the site design."
+}`;
 
 /**
  * Scrape a single page via Firecrawl (or fetch fallback) and generate a layout.
@@ -102,7 +120,69 @@ export async function generatePage(
     return { success: false, error: "Failed to scrape the page." };
   }
 
-  // Step 2: Generate layout via Claude
+  const slug = pageName.toLowerCase().replace(/\s+/g, "-");
+
+  // ── Code mode page generation ──────────────────────────────────
+  if (existingBlueprint.mode === "code") {
+    try {
+      const { text: rawText } = await streamToText({
+        model: "claude-opus-4-6",
+        max_tokens: 32768,
+        system: CODE_PAGE_GENERATION_PROMPT,
+        messages: [
+          {
+            role: "user",
+            content: `Generate a "${pageName}" page component for the site "${existingBlueprint.siteName}".
+
+EXISTING SITE CODE (match this visual style, colors, typography, layout patterns):
+\`\`\`tsx
+${existingBlueprint.code}
+\`\`\`
+
+COLOR SCHEME: ${JSON.stringify(existingBlueprint.colorScheme)}
+FONT: ${existingBlueprint.font || "system-ui"}
+
+SCRAPED PAGE CONTENT:
+${markdown}${images.length > 0 ? `\n\nIMAGES FOUND:\n${images.map((img, i) => `${i + 1}. ${img}`).join("\n")}` : ""}
+
+Return ONLY the JSON object with "code" and "message" keys.`,
+          },
+        ],
+      });
+
+      if (!rawText) {
+        return { success: false, error: "No response from AI." };
+      }
+
+      let jsonStr = rawText.trim();
+      if (jsonStr.startsWith("```")) {
+        jsonStr = jsonStr.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
+      }
+
+      const result = JSON.parse(jsonStr);
+
+      if (!result.code || typeof result.code !== "string") {
+        return { success: false, error: "Invalid code response." };
+      }
+
+      const page: BlueprintPage = {
+        id: crypto.randomUUID(),
+        name: pageName,
+        slug,
+        layout: [],
+        code: result.code,
+      };
+
+      return { success: true, page };
+    } catch (err) {
+      return {
+        success: false,
+        error: `Page generation failed: ${err instanceof Error ? err.message : "Unknown error"}`,
+      };
+    }
+  }
+
+  // ── Block mode page generation ─────────────────────────────────
   const designContext = {
     siteName: existingBlueprint.siteName,
     colorScheme: existingBlueprint.colorScheme,
@@ -147,8 +227,6 @@ Return ONLY the JSON object with a "layout" array.`,
     if (!Array.isArray(layout)) {
       return { success: false, error: "Invalid layout response." };
     }
-
-    const slug = pageName.toLowerCase().replace(/\s+/g, "-");
 
     const page: BlueprintPage = {
       id: crypto.randomUUID(),

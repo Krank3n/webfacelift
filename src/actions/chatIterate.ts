@@ -1,6 +1,7 @@
 "use server";
 
-import { anthropic, CHAT_ITERATE_SYSTEM_PROMPT } from "@/lib/anthropic";
+import { anthropic, streamToText, CHAT_ITERATE_SYSTEM_PROMPT, CODE_CHAT_ITERATE_SYSTEM_PROMPT } from "@/lib/anthropic";
+import { isCodeMode } from "@/lib/blueprint-utils";
 import type { BlueprintState, ChatMessage } from "@/types/blueprint";
 
 interface ChatIterateResult {
@@ -16,16 +17,76 @@ export async function chatIterate(
   chatHistory: ChatMessage[],
   uploadedImages?: string[]
 ): Promise<ChatIterateResult> {
-  try {
-    // Build conversation context
-    const historyMessages = chatHistory
-      .filter((m) => m.role !== "system")
-      .slice(-10) // Keep last 10 messages for context
-      .map((m) => ({
-        role: m.role as "user" | "assistant",
-        content: m.content,
-      }));
+  // Build conversation context
+  const historyMessages = chatHistory
+    .filter((m) => m.role !== "system")
+    .slice(-10)
+    .map((m) => ({
+      role: m.role as "user" | "assistant",
+      content: m.content,
+    }));
 
+  // ── Code mode iteration ──────────────────────────────────────────
+  if (isCodeMode(currentState)) {
+    try {
+      let systemAddendum = "";
+      if (uploadedImages && uploadedImages.length > 0) {
+        systemAddendum = `\n\nThe user has uploaded the following images that are available for use:\n${uploadedImages.map((url) => `- ${url}`).join("\n")}`;
+      }
+
+      const { text: rawText } = await streamToText({
+        model: "claude-opus-4-6",
+        max_tokens: 32768,
+        system: CODE_CHAT_ITERATE_SYSTEM_PROMPT + systemAddendum,
+        messages: [
+          ...historyMessages,
+          {
+            role: "user",
+            content: `CURRENT WEBSITE CODE:
+\`\`\`tsx
+${currentState.code}
+\`\`\`
+
+USER REQUEST: ${userPrompt}
+
+Apply the requested changes and return the response as JSON with "message" and "code" keys. Return ONLY the JSON object.`,
+          },
+        ],
+      });
+
+      if (!rawText) {
+        return { success: false, error: "No text response from AI." };
+      }
+
+      let jsonStr = rawText.trim();
+      if (jsonStr.startsWith("```")) {
+        jsonStr = jsonStr.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
+      }
+
+      const parsed = JSON.parse(jsonStr);
+
+      if (!parsed.code || typeof parsed.code !== "string") {
+        return { success: false, error: "Invalid response: missing code." };
+      }
+
+      return {
+        success: true,
+        message: parsed.message || "Changes applied.",
+        blueprint: {
+          ...currentState,
+          code: parsed.code,
+        },
+      };
+    } catch (err) {
+      return {
+        success: false,
+        error: `Chat iteration failed: ${err instanceof Error ? err.message : "Unknown error"}`,
+      };
+    }
+  }
+
+  // ── Block/niche mode iteration ───────────────────────────────────
+  try {
     let systemAddendum = "";
     if (uploadedImages && uploadedImages.length > 0) {
       systemAddendum = `\n\nThe user has uploaded the following images that are available for use in the blueprint:\n${uploadedImages.map((url) => `- ${url}`).join("\n")}`;

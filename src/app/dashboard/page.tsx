@@ -14,7 +14,6 @@ import {
   Trash2,
   ExternalLink,
   Zap,
-  Loader2,
   LogOut,
   CreditCard,
   Users,
@@ -22,6 +21,7 @@ import {
   MessageSquare,
   ArrowRight,
 } from "lucide-react";
+import { DashboardSkeleton } from "@/components/ui/Skeleton";
 import { toast } from "sonner";
 
 export default function DashboardPage() {
@@ -146,9 +146,7 @@ export default function DashboardPage() {
 
         {/* Projects grid */}
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 size={20} className="text-white/30 animate-spin" />
-          </div>
+          <DashboardSkeleton />
         ) : projects.length === 0 ? (
           <div className="space-y-8">
             {/* Welcome */}

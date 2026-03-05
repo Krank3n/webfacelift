@@ -187,6 +187,7 @@ export interface BlueprintPage {
   layout: BlueprintBlock[];
   nicheTemplate?: NicheCategory;
   nicheData?: NicheBusinessData;
+  code?: string;
 }
 
 export interface BlueprintState {
@@ -208,6 +209,8 @@ export interface BlueprintState {
   defaultLanguage?: string;
   languages?: string[];
   translations?: Record<string, Record<string, string>>;
+  mode?: "code" | "blocks";
+  code?: string;
 }
 
 export interface ChatMessage {

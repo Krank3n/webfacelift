@@ -1,11 +1,17 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import dynamic from "next/dynamic";
 import type { BlueprintState } from "@/types/blueprint";
-import { getBlueprintPages } from "@/lib/blueprint-utils";
+import { getBlueprintPages, isCodeMode } from "@/lib/blueprint-utils";
 import Renderer from "@/components/builder/Renderer";
 import IframePreview from "@/components/workspace/IframePreview";
 import { Zap } from "lucide-react";
+
+const SandpackPreview = dynamic(
+  () => import("@/components/workspace/SandpackPreview"),
+  { ssr: false }
+);
 
 export default function SharePreview({
   blueprint,
@@ -27,16 +33,23 @@ export default function SharePreview({
       layout: page.layout,
       nicheTemplate: page.nicheTemplate,
       nicheData: page.nicheData,
+      code: page.code ?? blueprint.code,
     };
   }, [blueprint, pages, activePageId]);
 
+  const inCodeMode = isCodeMode(activePageBlueprint);
+
   return (
     <div className="h-screen flex flex-col bg-zinc-950">
-      {/* Full viewport iframe preview */}
+      {/* Full viewport preview */}
       <div className="flex-1 min-h-0">
-        <IframePreview>
-          <Renderer blueprint={activePageBlueprint} />
-        </IframePreview>
+        {inCodeMode ? (
+          <SandpackPreview blueprint={activePageBlueprint} />
+        ) : (
+          <IframePreview>
+            <Renderer blueprint={activePageBlueprint} />
+          </IframePreview>
+        )}
       </div>
 
       {/* Page nav dots — only if multi-page */}

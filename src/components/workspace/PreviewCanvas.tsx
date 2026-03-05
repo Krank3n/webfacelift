@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { useProjectStore } from "@/store/project-store";
-import { getBlueprintPages } from "@/lib/blueprint-utils";
+import { getBlueprintPages, isCodeMode } from "@/lib/blueprint-utils";
 import Renderer from "@/components/builder/Renderer";
 import IframePreview from "./IframePreview";
 import TextEditModal from "./TextEditModal";
@@ -10,6 +11,15 @@ import ImagePickerModal from "./ImagePickerModal";
 import { EditContext, TranslationContext, setDeepValue } from "@/components/builder/EditableText";
 import type { TranslationContextValue } from "@/components/builder/EditableText";
 import { Monitor, Tablet, Smartphone, Pencil, Eye, Maximize, Minimize, Languages } from "lucide-react";
+
+const SandpackPreview = dynamic(() => import("./SandpackPreview"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-full">
+      <p className="text-sm text-white/30">Loading preview...</p>
+    </div>
+  ),
+});
 
 const viewportWidths = {
   desktop: "100%",
@@ -72,8 +82,11 @@ export default function PreviewCanvas() {
       layout: page.layout,
       nicheTemplate: page.nicheTemplate,
       nicheData: page.nicheData,
+      code: page.code ?? blueprint.code,
     };
   }, [blueprint, activePageId]);
+
+  const inCodeMode = activePageBlueprint ? isCodeMode(activePageBlueprint) : false;
 
   const hasMultipleLanguages = (blueprint?.languages?.length ?? 0) > 1;
   const defaultLanguage = blueprint?.defaultLanguage ?? "en";
@@ -172,30 +185,32 @@ export default function PreviewCanvas() {
           </button>
         ))}
 
-        {/* Divider */}
-        <div className="w-px h-4 bg-white/10 mx-1" />
+        {/* Edit / Preview toggle — hidden in code mode */}
+        {!inCodeMode && (
+          <>
+            <div className="w-px h-4 bg-white/10 mx-1" />
+            {([
+              { mode: "edit" as const, icon: Pencil, label: "Edit mode" },
+              { mode: "preview" as const, icon: Eye, label: "Preview mode" },
+            ]).map(({ mode, icon: Icon, label }) => (
+              <button
+                key={mode}
+                onClick={() => setPreviewMode(mode)}
+                className={`p-1.5 rounded-lg transition-colors ${
+                  previewMode === mode
+                    ? "bg-indigo-500/20 text-indigo-400"
+                    : "text-white/30 hover:text-white/60 hover:bg-white/5"
+                }`}
+                title={label}
+              >
+                <Icon size={14} />
+              </button>
+            ))}
+          </>
+        )}
 
-        {/* Edit / Preview toggle */}
-        {([
-          { mode: "edit" as const, icon: Pencil, label: "Edit mode" },
-          { mode: "preview" as const, icon: Eye, label: "Preview mode" },
-        ]).map(({ mode, icon: Icon, label }) => (
-          <button
-            key={mode}
-            onClick={() => setPreviewMode(mode)}
-            className={`p-1.5 rounded-lg transition-colors ${
-              previewMode === mode
-                ? "bg-indigo-500/20 text-indigo-400"
-                : "text-white/30 hover:text-white/60 hover:bg-white/5"
-            }`}
-            title={label}
-          >
-            <Icon size={14} />
-          </button>
-        ))}
-
-        {/* Language switcher — only when multiple languages */}
-        {hasMultipleLanguages && blueprint?.languages && (
+        {/* Language switcher — only when multiple languages and not code mode */}
+        {!inCodeMode && hasMultipleLanguages && blueprint?.languages && (
           <>
             <div className="w-px h-4 bg-white/10 mx-1" />
             <Languages size={13} className="text-white/20 mx-0.5" />
@@ -249,6 +264,8 @@ export default function PreviewCanvas() {
                 </p>
               </div>
             </div>
+          ) : activePageBlueprint && inCodeMode ? (
+            <SandpackPreview blueprint={activePageBlueprint} />
           ) : activePageBlueprint ? (
             <IframePreview>
               <TranslationContext.Provider value={translationCtx}>

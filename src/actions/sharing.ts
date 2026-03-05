@@ -125,9 +125,12 @@ export async function getSharedProject(
 
   if (projectError || !project) return { success: false, error: "Project not found." };
 
+  const state = project.current_json_state;
+  const blueprint = typeof state === "string" ? JSON.parse(state) : state;
+
   return {
     success: true,
-    blueprint: project.current_json_state as BlueprintState,
+    blueprint: blueprint as BlueprintState,
     siteName: project.site_name,
   };
 }

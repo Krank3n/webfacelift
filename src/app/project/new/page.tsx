@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { scrapeAndGenerate } from "@/actions/scrapeAndGenerate";
 import { createProject } from "@/actions/projects";
 import { getCredits } from "@/actions/credits";
-import { useProjectStore } from "@/store/project-store";
+import { useProjectStore, clearDemoSession } from "@/store/project-store";
 import {
   Zap,
   Loader2,
@@ -98,7 +98,7 @@ function NewProjectContent() {
   const hasStarted = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const setBlueprint = useProjectStore((s) => s.setBlueprint);
-  const existingBlueprint = useProjectStore((s) => s.blueprint);
+  const reset = useProjectStore((s) => s.reset);
 
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [currentStageIndex, setCurrentStageIndex] = useState(0);
@@ -112,10 +112,9 @@ function NewProjectContent() {
       return;
     }
 
-    if (existingBlueprint) {
-      router.replace(`/project/demo?url=${encodeURIComponent(url)}`);
-      return;
-    }
+    // Clear any previous generation state so we always start fresh
+    reset();
+    clearDemoSession();
 
     // Pre-check credits (UX only — server action is the real gate)
     const creditCheck = await getCredits();
@@ -156,7 +155,7 @@ function NewProjectContent() {
       toast.error("Failed to save project — opening in demo mode");
       router.replace(`/project/demo?url=${encodeURIComponent(url)}`);
     }
-  }, [url, existingBlueprint, setBlueprint, router]);
+  }, [url, reset, setBlueprint, router]);
 
   // Start generation
   useEffect(() => {

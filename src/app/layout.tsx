@@ -11,39 +11,67 @@ const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://webfacelift.com";
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
   title: {
-    default: "webfacelift — More than a facelift. We reconstruct the bones.",
+    default: "webfacelift — AI Website Refurbishment & Redesign Tool",
     template: "%s — webfacelift",
   },
   description:
-    "Transform outdated business websites into modern, stunning designs using AI. Paste a URL, get a complete redesign in seconds.",
+    "Refurbish and reconstruct outdated business websites into modern, stunning designs using AI. Paste any URL and get a complete site refurbishment in seconds — no coding required.",
   keywords: [
+    "website refurbishment",
+    "site refurbishment",
     "website redesign",
-    "AI website builder",
     "website reconstruction",
-    "modern web design",
-    "AI design tool",
+    "AI website builder",
     "website makeover",
+    "modernize website",
+    "website refresh",
+    "website renovation",
+    "revamp website",
+    "outdated website fix",
+    "AI design tool",
+    "modern web design",
+    "website rebuild",
+    "small business website redesign",
   ],
   authors: [{ name: "webfacelift" }],
   creator: "webfacelift",
+  icons: {
+    icon: [
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
   openGraph: {
     type: "website",
     locale: "en_US",
     url: BASE_URL,
     siteName: "webfacelift",
-    title: "webfacelift — More than a facelift. We reconstruct the bones.",
+    title: "webfacelift — AI Website Refurbishment & Redesign Tool",
     description:
-      "Transform outdated business websites into modern, stunning designs using AI. Paste a URL, get a complete redesign in seconds.",
+      "Refurbish and reconstruct outdated business websites into modern, stunning designs using AI. Paste any URL and get a complete site refurbishment in seconds.",
+    images: [
+      {
+        url: "/images/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "webfacelift — AI-powered website refurbishment",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "webfacelift — More than a facelift. We reconstruct the bones.",
+    title: "webfacelift — AI Website Refurbishment & Redesign Tool",
     description:
-      "Transform outdated business websites into modern, stunning designs using AI. Paste a URL, get a complete redesign in seconds.",
+      "Refurbish and reconstruct outdated business websites into modern, stunning designs using AI. Paste any URL and get a complete site refurbishment in seconds.",
+    images: ["/images/og-image.png"],
   },
   robots: {
     index: true,
     follow: true,
+  },
+  alternates: {
+    canonical: BASE_URL,
   },
 };
 
@@ -57,10 +85,13 @@ export default function RootLayout({
     "@type": "SoftwareApplication",
     name: "webfacelift",
     description:
-      "AI-powered website reconstruction tool. Paste any outdated website URL and get a modern redesign blueprint in seconds.",
+      "AI-powered website refurbishment and reconstruction tool. Paste any outdated website URL and get a modern redesign in seconds. The fastest way to refurbish a business website.",
     url: BASE_URL,
+    image: `${BASE_URL}/images/og-image.png`,
+    logo: `${BASE_URL}/images/webfacelift-logo-compressed.png`,
     applicationCategory: "DesignApplication",
     operatingSystem: "Web",
+    keywords: "website refurbishment, site refurbishment, website redesign, website reconstruction, AI website builder, modernize website",
     offers: {
       "@type": "AggregateOffer",
       priceCurrency: "USD",

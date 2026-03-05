@@ -22,13 +22,13 @@ import {
   ImagePlus,
   FileText,
   ArrowLeft,
-  Loader2,
   Code2,
   Share2,
   Eye,
   Undo2,
   Redo2,
 } from "lucide-react";
+import { WorkspaceSkeleton } from "@/components/ui/Skeleton";
 
 type Tab = "chat" | "pages" | "media" | "json";
 
@@ -101,9 +101,15 @@ export default function WorkspacePage() {
       if (res.success && res.project) {
         setProjectId(res.project.id);
         setOriginalUrl(res.project.original_url);
-        if (res.project.current_json_state) {
-          setBlueprint(res.project.current_json_state);
+        const state = res.project.current_json_state;
+        if (state) {
+          // Supabase jsonb is normally auto-parsed, but guard against string
+          const bp = typeof state === "string" ? JSON.parse(state) : state;
+          setBlueprint(bp as BlueprintState);
         }
+      } else if (!res.success) {
+        console.error("[project load]", res.error);
+        toast.error(res.error || "Failed to load project");
       }
 
       if (permRes.success) {
@@ -121,11 +127,7 @@ export default function WorkspacePage() {
   }, [id, projectId, blueprint, setProjectId, setBlueprint, setOriginalUrl, setPermission, setPreviewMode]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-        <Loader2 size={20} className="text-white/30 animate-spin" />
-      </div>
-    );
+    return <WorkspaceSkeleton />;
   }
 
   const isViewer = permission === "viewer";
@@ -177,7 +179,9 @@ export default function WorkspacePage() {
           <div className="h-full overflow-auto p-4">
             <pre className="text-[11px] text-white/40 font-mono leading-relaxed whitespace-pre-wrap break-all">
               {blueprint
-                ? JSON.stringify(blueprint, null, 2)
+                ? (blueprint.mode === "code" && blueprint.code
+                    ? blueprint.code
+                    : JSON.stringify(blueprint, null, 2))
                 : "No blueprint loaded"}
             </pre>
           </div>
