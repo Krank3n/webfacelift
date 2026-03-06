@@ -405,9 +405,47 @@ export default function LandingPage() {
         )}
       </section>
 
+      {/* SEO Links */}
+      <section className="relative z-10 max-w-5xl mx-auto px-6 py-12">
+        <h3 className="text-sm font-semibold text-white/30 mb-4">Website redesign by industry</h3>
+        <div className="flex flex-wrap gap-2 mb-8">
+          {[
+            ["Plumbers", "/website-redesign-for-plumbers"],
+            ["Electricians", "/website-redesign-for-electricians"],
+            ["Restaurants", "/website-redesign-for-restaurants"],
+            ["Dentists", "/website-redesign-for-dentists"],
+            ["Lawyers", "/website-redesign-for-lawyers"],
+            ["Real Estate", "/website-redesign-for-real-estate-agents"],
+            ["Builders", "/website-redesign-for-builders"],
+            ["Cafes", "/website-redesign-for-cafes"],
+          ].map(([label, href]) => (
+            <a key={href} href={href} className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-xs text-white/40 hover:text-white/60 hover:border-white/10 transition-all">
+              {label}
+            </a>
+          ))}
+        </div>
+        <h3 className="text-sm font-semibold text-white/30 mb-4">Website redesign by city</h3>
+        <div className="flex flex-wrap gap-2">
+          {[
+            ["Sydney", "/website-redesign-sydney"],
+            ["Melbourne", "/website-redesign-melbourne"],
+            ["Brisbane", "/website-redesign-brisbane"],
+            ["Perth", "/website-redesign-perth"],
+            ["Adelaide", "/website-redesign-adelaide"],
+            ["Gold Coast", "/website-redesign-gold-coast"],
+            ["Newcastle", "/website-redesign-newcastle"],
+            ["Canberra", "/website-redesign-canberra"],
+          ].map(([label, href]) => (
+            <a key={href} href={href} className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-xs text-white/40 hover:text-white/60 hover:border-white/10 transition-all">
+              {label}
+            </a>
+          ))}
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="relative z-10 border-t border-white/[0.06] px-6 py-8">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
+        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <span className="text-xs text-white/30">
             &copy; {new Date().getFullYear()} webfacelift
           </span>
@@ -417,6 +455,9 @@ export default function LandingPage() {
             </a>
             <a href="/terms" className="text-xs text-white/20 hover:text-white/40 transition-colors">
               Terms
+            </a>
+            <a href="/showcase" className="text-xs text-white/20 hover:text-white/40 transition-colors">
+              Showcase
             </a>
             <span className="text-xs text-white/20">
               Powered by Claude &middot; Built with Next.js
