@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
 import type { BlueprintState } from "@/types/blueprint";
 import { getBlueprintPages, isCodeMode } from "@/lib/blueprint-utils";
@@ -16,10 +16,48 @@ const SandpackPreview = dynamic(
 export default function SharePreview({
   blueprint,
   siteName,
+  projectId,
 }: {
   blueprint: BlueprintState;
   siteName: string;
+  projectId?: string;
 }) {
+  // Listen for contact form submissions from the Sandpack iframe
+  const handleMessage = useCallback(
+    async (event: MessageEvent) => {
+      if (event.data?.type !== "webfacelift-contact-form" || !projectId) return;
+
+      const { name, email, phone, message, fields } = event.data.data;
+      try {
+        const res = await fetch("/api/contact", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ projectId, name, email, phone, message, fields }),
+        });
+        const result = await res.json();
+        // Post result back to the iframe
+        event.source?.postMessage(
+          {
+            type: "webfacelift-contact-result",
+            success: result.success || false,
+            error: result.error,
+          },
+          { targetOrigin: "*" }
+        );
+      } catch {
+        event.source?.postMessage(
+          { type: "webfacelift-contact-result", success: false, error: "Network error" },
+          { targetOrigin: "*" }
+        );
+      }
+    },
+    [projectId]
+  );
+
+  useEffect(() => {
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [handleMessage]);
   const pages = useMemo(() => getBlueprintPages(blueprint), [blueprint]);
   const [activePageId, setActivePageId] = useState<string | null>(null);
 

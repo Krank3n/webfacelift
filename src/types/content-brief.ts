@@ -84,11 +84,18 @@ export interface StatEntry {
   value: string;
 }
 
+export interface VideoCatalogEntry {
+  url: string;
+  description: string;
+  recommendedPlacement: "hero-background" | "section" | "gallery";
+}
+
 export interface ContentBrief {
   business: ContentBriefBusiness;
   tone: ContentBriefTone;
   contentSections: ContentSection[];
   imageCatalog: ImageCatalogEntry[];
+  videoCatalog?: VideoCatalogEntry[];
   contact: ContentBriefContact;
   nicheDetection: NicheDetection;
   templateRecommendation: TemplateRecommendation;

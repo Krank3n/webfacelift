@@ -105,7 +105,7 @@ export async function deleteShareLink(
 
 export async function getSharedProject(
   token: string
-): Promise<{ success: boolean; blueprint?: BlueprintState; siteName?: string; error?: string }> {
+): Promise<{ success: boolean; blueprint?: BlueprintState; siteName?: string; projectId?: string; error?: string }> {
   const admin = createAdminClient();
 
   const { data: link, error: linkError } = await admin
@@ -132,6 +132,7 @@ export async function getSharedProject(
     success: true,
     blueprint: blueprint as BlueprintState,
     siteName: project.site_name,
+    projectId: link.project_id,
   };
 }
 

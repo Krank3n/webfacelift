@@ -190,6 +190,14 @@ export interface BlueprintPage {
   code?: string;
 }
 
+export interface MediaCatalogEntry {
+  url: string;
+  type: "image" | "video";
+  description?: string;
+  recommendedPlacement?: string;
+  priority?: number;
+}
+
 export interface BlueprintState {
   siteName: string;
   colorScheme: {
@@ -211,6 +219,7 @@ export interface BlueprintState {
   translations?: Record<string, Record<string, string>>;
   mode?: "code" | "blocks";
   code?: string;
+  mediaCatalog?: MediaCatalogEntry[];
 }
 
 export interface ChatMessage {

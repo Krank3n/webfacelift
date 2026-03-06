@@ -342,6 +342,19 @@ IMAGE RULES (CRITICAL):
 - If imageCatalog is empty, use solid color backgrounds and gradients instead.
 - NEVER use placeholder image services (placeholder.com, placehold.it, unsplash.com/random, picsum, via.placeholder, etc.).
 
+VIDEO RULES (CRITICAL):
+- If the content brief includes a "videoCatalog" with video URLs, you MUST use them in the generated code.
+- The video with recommendedPlacement "hero-background" should be used as a background video in the hero section.
+- Use \`<video>\` tags with: autoPlay, muted, loop, playsInline attributes (all required for autoplay to work).
+- Add crossOrigin="anonymous" to all \`<video>\` tags.
+- Hero background video pattern:
+  \`<video autoPlay muted loop playsInline crossOrigin="anonymous" className="absolute inset-0 w-full h-full object-cover" src="VIDEO_URL" />\`
+  with a dark overlay div on top for text readability.
+- Add an onError handler to hide broken videos: \`onError={(e) => { e.currentTarget.style.display = 'none' }}\`
+- If a hero video is available, prefer it over a static hero image — video backgrounds create a much more dynamic and engaging experience.
+- Secondary videos (recommendedPlacement "section" or "gallery") can be embedded in content sections with controls enabled.
+- NEVER fabricate video URLs. Only use URLs from the content brief's videoCatalog.
+
 COLOR IDENTITY (CRITICAL):
 - If the content brief includes "extractedBrandColors", you MUST base your colorScheme on these actual CSS colors from the original website.
 - Pick the most prominent non-gray color as primary, a complementary one as secondary.
@@ -366,9 +379,33 @@ SECTION IDEAS (mix and match for variety):
 - Pricing tiers
 - FAQ with accordion (useState for open/close)
 - Gallery/portfolio grid
-- Contact section with form fields
+- Contact section with working form (see CONTACT FORM below)
 - CTA banner
 - Footer with links, social icons, copyright
+
+CONTACT FORM (CRITICAL):
+- Contact forms MUST submit via postMessage to the parent window — NOT mailto, NOT fetch.
+- On form submit, call: \`window.parent.postMessage({ type: 'webfacelift-contact-form', data: { name, email, phone, message } }, '*')\`
+- Listen for the response: add a useEffect that listens for \`window.addEventListener('message', handler)\` where handler checks for \`event.data.type === 'webfacelift-contact-result'\`
+- Show a success/error state based on the response.
+- Example pattern:
+  \`\`\`
+  const [formStatus, setFormStatus] = React.useState<'idle'|'sending'|'sent'|'error'>('idle');
+  React.useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type === 'webfacelift-contact-result') {
+        setFormStatus(e.data.success ? 'sent' : 'error');
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, []);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormStatus('sending');
+    window.parent.postMessage({ type: 'webfacelift-contact-form', data: { name, email, phone, message } }, '*');
+  };
+  \`\`\`
 
 DESIGN GUIDE INSTRUCTIONS:
 If a === DESIGN GUIDE FROM SENIOR DESIGNER === section is included, follow it closely for section ordering, visual treatments, and creative direction.
@@ -437,7 +474,15 @@ CODE REQUIREMENTS:
 - Maintain mobile responsiveness
 - NEVER use emoji characters as icons — use inline SVG icons with currentColor instead
 - All \`<img>\` tags must have onError={(e) => { e.currentTarget.style.display = 'none' }} and a gradient/color parent background as fallback
+- All \`<video>\` tags must have autoPlay, muted, loop, playsInline, crossOrigin="anonymous", and onError handler
 - NEVER use placeholder image services (placeholder.com, unsplash.com/random, picsum, etc.)
+- Contact forms MUST submit via \`window.parent.postMessage({ type: 'webfacelift-contact-form', data: { name, email, phone, message } }, '*')\` — NOT mailto or fetch. Listen for \`webfacelift-contact-result\` message for success/error feedback.
+
+MEDIA CATALOG:
+- If the user message includes an "AVAILABLE MEDIA" section, these are the original images and videos scraped from the website.
+- Use these URLs when the user asks to add images/videos from the original website.
+- For videos: use \`<video autoPlay muted loop playsInline crossOrigin="anonymous" className="absolute inset-0 w-full h-full object-cover" src="URL" />\` for background videos.
+- For images: use \`<img crossOrigin="anonymous" onError={(e) => { e.currentTarget.style.display = 'none' }} />\` with proper classes.
 
 RESPONSE FORMAT:
 {

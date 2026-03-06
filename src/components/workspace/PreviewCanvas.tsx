@@ -51,6 +51,7 @@ export default function PreviewCanvas() {
   const isGenerating = useProjectStore((s) => s.isGenerating);
   const activeLanguage = useProjectStore((s) => s.activeLanguage);
   const setActiveLanguage = useProjectStore((s) => s.setActiveLanguage);
+  const projectId = useProjectStore((s) => s.projectId);
   const isEditing = previewMode === "edit";
   const canvasRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -62,6 +63,33 @@ export default function PreviewCanvas() {
     document.addEventListener("fullscreenchange", onFsChange);
     return () => document.removeEventListener("fullscreenchange", onFsChange);
   }, []);
+
+  // Listen for contact form submissions from the Sandpack iframe
+  useEffect(() => {
+    const handler = async (event: MessageEvent) => {
+      if (event.data?.type !== "webfacelift-contact-form" || !projectId) return;
+      const { name, email, phone, message, fields } = event.data.data;
+      try {
+        const res = await fetch("/api/contact", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ projectId, name, email, phone, message, fields }),
+        });
+        const result = await res.json();
+        event.source?.postMessage(
+          { type: "webfacelift-contact-result", success: result.success || false, error: result.error },
+          { targetOrigin: "*" }
+        );
+      } catch {
+        event.source?.postMessage(
+          { type: "webfacelift-contact-result", success: false, error: "Network error" },
+          { targetOrigin: "*" }
+        );
+      }
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, [projectId]);
 
   const toggleFullscreen = useCallback(() => {
     if (!canvasRef.current) return;

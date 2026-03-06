@@ -89,6 +89,7 @@ interface ProjectStore {
   setPreviewMode: (mode: "edit" | "preview") => void;
   setHoveredBlockIndex: (index: number | null) => void;
   addUploadedImage: (url: string) => void;
+  setUploadedImages: (urls: string[]) => void;
   setActivePageId: (id: string | null) => void;
   addPage: (page: BlueprintPage) => void;
   removePage: (pageId: string) => void;
@@ -125,7 +126,20 @@ export const useProjectStore = create<ProjectStore>((set) => ({
   setProjectId: (id) => set({ projectId: id }),
   setOriginalUrl: (url) => set({ originalUrl: url }),
   setPermission: (permission) => set({ permission }),
-  setBlueprint: (state) => set({ blueprint: state, activePageId: null, blueprintHistory: [], blueprintFuture: [] }),
+  setBlueprint: (state) => {
+    // Seed media panel with scraped images/videos from mediaCatalog
+    const mediaUrls = state.mediaCatalog?.map((m) => m.url) || [];
+    return set((s) => ({
+      blueprint: state,
+      activePageId: null,
+      blueprintHistory: [],
+      blueprintFuture: [],
+      // Merge: keep any already-uploaded images, add new media from scrape
+      uploadedImages: mediaUrls.length > 0
+        ? [...new Set([...mediaUrls, ...s.uploadedImages])]
+        : s.uploadedImages,
+    }));
+  },
   pushBlueprint: (state) =>
     set((s) => {
       const history = s.blueprint
@@ -166,6 +180,7 @@ export const useProjectStore = create<ProjectStore>((set) => ({
   setHoveredBlockIndex: (index) => set({ hoveredBlockIndex: index }),
   addUploadedImage: (url) =>
     set((s) => ({ uploadedImages: [...s.uploadedImages, url] })),
+  setUploadedImages: (urls) => set({ uploadedImages: urls }),
   setActivePageId: (id) => set({ activePageId: id }),
   addPage: (page) =>
     set((s) => {

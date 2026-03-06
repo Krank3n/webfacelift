@@ -18,6 +18,7 @@ export default async function SharePage({
     <SharePreview
       blueprint={result.blueprint}
       siteName={result.siteName || "Untitled"}
+      projectId={result.projectId}
     />
   );
 }

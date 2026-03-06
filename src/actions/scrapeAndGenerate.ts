@@ -7,7 +7,7 @@ import {
   CODE_GENERATION_SYSTEM_PROMPT,
 } from "@/lib/anthropic";
 import { getGeminiDesignGuide } from "@/lib/gemini";
-import type { BlueprintState } from "@/types/blueprint";
+import type { BlueprintState, MediaCatalogEntry } from "@/types/blueprint";
 import type { ContentBrief } from "@/types/content-brief";
 import { validateUrl } from "@/lib/url-validation";
 import { deductCredit } from "@/actions/credits";
@@ -845,6 +845,30 @@ ${contentBriefStr}${designGuideContext}`,
       return { success: false, error: "Stage 2: Invalid response: missing colorScheme." };
     }
 
+    // Build media catalog from content brief for future chat iterations
+    const mediaCatalog: MediaCatalogEntry[] = [];
+    if (contentBrief.imageCatalog) {
+      for (const img of contentBrief.imageCatalog) {
+        mediaCatalog.push({
+          url: img.url,
+          type: "image",
+          description: img.description,
+          recommendedPlacement: img.recommendedPlacement,
+          priority: img.priority,
+        });
+      }
+    }
+    if (contentBrief.videoCatalog) {
+      for (const vid of contentBrief.videoCatalog) {
+        mediaCatalog.push({
+          url: vid.url,
+          type: "video",
+          description: vid.description,
+          recommendedPlacement: vid.recommendedPlacement,
+        });
+      }
+    }
+
     const blueprint: BlueprintState = {
       siteName: parsed.siteName || contentBrief.business?.name || "Website",
       colorScheme: parsed.colorScheme,
@@ -852,6 +876,7 @@ ${contentBriefStr}${designGuideContext}`,
       layout: [],
       mode: "code",
       code: parsed.code,
+      ...(mediaCatalog.length > 0 && { mediaCatalog }),
     };
 
     // Attach discovered pages from the scrape step

@@ -34,6 +34,26 @@ export async function chatIterate(
         systemAddendum = `\n\nThe user has uploaded the following images that are available for use:\n${uploadedImages.map((url) => `- ${url}`).join("\n")}`;
       }
 
+      // Build media catalog context if available
+      let mediaContext = "";
+      if (currentState.mediaCatalog && currentState.mediaCatalog.length > 0) {
+        const images = currentState.mediaCatalog.filter((m) => m.type === "image");
+        const videos = currentState.mediaCatalog.filter((m) => m.type === "video");
+        mediaContext = "\n\nAVAILABLE MEDIA FROM ORIGINAL WEBSITE:";
+        if (images.length > 0) {
+          mediaContext += `\n\nImages (${images.length}):`;
+          for (const img of images) {
+            mediaContext += `\n- ${img.url}${img.description ? ` (${img.description})` : ""}${img.recommendedPlacement ? ` [${img.recommendedPlacement}]` : ""}`;
+          }
+        }
+        if (videos.length > 0) {
+          mediaContext += `\n\nVideos (${videos.length}):`;
+          for (const vid of videos) {
+            mediaContext += `\n- ${vid.url}${vid.description ? ` (${vid.description})` : ""}${vid.recommendedPlacement ? ` [${vid.recommendedPlacement}]` : ""}`;
+          }
+        }
+      }
+
       const { text: rawText } = await streamToText({
         model: "claude-opus-4-6",
         max_tokens: 32768,
@@ -46,6 +66,7 @@ export async function chatIterate(
 \`\`\`tsx
 ${currentState.code}
 \`\`\`
+${mediaContext}
 
 USER REQUEST: ${userPrompt}
 
