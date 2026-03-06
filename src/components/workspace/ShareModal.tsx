@@ -11,6 +11,8 @@ import {
   Loader2,
   Trash2,
   ChevronDown,
+  Globe,
+  Mail,
 } from "lucide-react";
 import {
   createShareLink,
@@ -21,6 +23,12 @@ import {
   removeCollaborator,
   updateCollaboratorRole,
 } from "@/actions/sharing";
+import {
+  getCustomDomain,
+  setCustomDomain,
+  removeCustomDomain,
+  setContactEmail,
+} from "@/actions/domains";
 import type { ShareLink, Collaborator } from "@/types/sharing";
 import { toast } from "sonner";
 
@@ -30,7 +38,7 @@ interface ShareModalProps {
   onClose: () => void;
 }
 
-type Tab = "link" | "people";
+type Tab = "link" | "publish" | "people";
 
 export default function ShareModal({ open, projectId, onClose }: ShareModalProps) {
   const [tab, setTab] = useState<Tab>("link");
@@ -45,10 +53,21 @@ export default function ShareModal({ open, projectId, onClose }: ShareModalProps
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState("");
 
+  // Publish tab state
+  const [domain, setDomain] = useState("");
+  const [domainVerified, setDomainVerified] = useState(false);
+  const [domainLoading, setDomainLoading] = useState(true);
+  const [domainSaving, setDomainSaving] = useState(false);
+  const [contactEmailValue, setContactEmailValue] = useState("");
+  const [contactEmailSaving, setContactEmailSaving] = useState(false);
+  const [domainVerifying, setDomainVerifying] = useState(false);
+  const [verifyMessage, setVerifyMessage] = useState("");
+
   useEffect(() => {
     if (!open) return;
     loadShareLink();
     loadCollaborators();
+    loadPublishSettings();
   }, [open, projectId]);
 
   useEffect(() => {
@@ -72,6 +91,16 @@ export default function ShareModal({ open, projectId, onClose }: ShareModalProps
     const res = await getProjectCollaborators(projectId);
     if (res.success && res.collaborators) setCollaborators(res.collaborators);
     setPeopleLoading(false);
+  }
+
+  async function loadPublishSettings() {
+    setDomainLoading(true);
+    const res = await getCustomDomain(projectId);
+    if (res.success && res.domain) {
+      setDomain(res.domain.domain);
+      setDomainVerified(res.domain.verified);
+    }
+    setDomainLoading(false);
   }
 
   async function handleCreateLink() {
@@ -129,12 +158,73 @@ export default function ShareModal({ open, projectId, onClose }: ShareModalProps
     );
   }
 
+  async function handleSaveDomain() {
+    if (!domain.trim()) return;
+    setDomainSaving(true);
+    const res = await setCustomDomain(projectId, domain.trim());
+    if (res.success) {
+      toast.success("Domain saved. Point your DNS and we'll verify it.");
+      setDomainVerified(false);
+    } else {
+      toast.error(res.error || "Failed to save domain");
+    }
+    setDomainSaving(false);
+  }
+
+  async function handleRemoveDomain() {
+    setDomainSaving(true);
+    const res = await removeCustomDomain(projectId);
+    if (res.success) {
+      setDomain("");
+      setDomainVerified(false);
+      toast.success("Custom domain removed");
+    } else {
+      toast.error(res.error || "Failed to remove domain");
+    }
+    setDomainSaving(false);
+  }
+
+  async function handleVerifyDomain() {
+    setDomainVerifying(true);
+    setVerifyMessage("");
+    try {
+      const res = await fetch("/api/domains/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId }),
+      });
+      const result = await res.json();
+      if (result.verified) {
+        setDomainVerified(true);
+        setVerifyMessage("");
+        toast.success("Domain verified!");
+      } else {
+        setVerifyMessage(result.message || "Verification failed");
+      }
+    } catch {
+      setVerifyMessage("Could not verify domain");
+    }
+    setDomainVerifying(false);
+  }
+
+  async function handleSaveContactEmail() {
+    if (!contactEmailValue.trim()) return;
+    setContactEmailSaving(true);
+    const res = await setContactEmail(projectId, contactEmailValue.trim());
+    if (res.success) {
+      toast.success("Contact email saved");
+    } else {
+      toast.error(res.error || "Failed to save email");
+    }
+    setContactEmailSaving(false);
+  }
+
   return (
     <ModalOverlay open={open} onClose={onClose} label="Share Project">
       <div className="w-full max-w-md mx-4 rounded-xl bg-zinc-900 border border-white/10 shadow-2xl shadow-black/50 animate-fade-in-up">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-white/10">
-          <span className="text-sm font-medium text-white">Share Project</span>
+          <span className="text-sm font-medium text-white">Share & Publish</span>
           <button
             onClick={onClose}
             className="p-1 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors"
@@ -147,6 +237,7 @@ export default function ShareModal({ open, projectId, onClose }: ShareModalProps
         <div className="flex border-b border-white/10">
           {([
             { key: "link" as Tab, label: "Link", icon: Link2 },
+            { key: "publish" as Tab, label: "Publish", icon: Globe },
             { key: "people" as Tab, label: "People", icon: Users },
           ]).map(({ key, label, icon: Icon }) => (
             <button
@@ -232,6 +323,148 @@ export default function ShareModal({ open, projectId, onClose }: ShareModalProps
                       </button>
                     </div>
                   )}
+                </>
+              )}
+            </div>
+          )}
+
+          {tab === "publish" && (
+            <div className="space-y-6">
+              {domainLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 size={16} className="text-white/30 animate-spin" />
+                </div>
+              ) : (
+                <>
+                  {/* Custom Domain */}
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-xs font-medium text-white flex items-center gap-1.5">
+                        <Globe size={12} />
+                        Custom Domain
+                      </p>
+                      <p className="text-[11px] text-white/30 mt-0.5">
+                        Use your own domain for this site
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        placeholder="yourdomain.com"
+                        value={domain}
+                        onChange={(e) => setDomain(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleSaveDomain()}
+                        className="flex-1 px-3 py-2 rounded-lg bg-zinc-800 border border-white/10 text-white text-sm placeholder:text-white/30 outline-none focus:border-indigo-500/50"
+                      />
+                      <button
+                        onClick={handleSaveDomain}
+                        disabled={domainSaving || !domain.trim()}
+                        className="px-3 py-2 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg transition-colors disabled:opacity-40"
+                      >
+                        {domainSaving ? (
+                          <Loader2 size={12} className="animate-spin" />
+                        ) : (
+                          "Save"
+                        )}
+                      </button>
+                      {domain && (
+                        <button
+                          onClick={handleRemoveDomain}
+                          disabled={domainSaving}
+                          className="p-2 rounded-lg hover:bg-red-500/10 text-white/30 hover:text-red-400 transition-colors"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      )}
+                    </div>
+
+                    {domain && !domainVerified && (
+                      <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                        <p className="text-[11px] text-amber-400 font-medium mb-1.5">
+                          DNS Setup Required
+                        </p>
+                        <p className="text-[11px] text-amber-400/70 mb-2">
+                          Add a CNAME record at your domain registrar:
+                        </p>
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-2 p-2 rounded bg-black/30 font-mono text-[11px]">
+                            <span className="text-white/40">CNAME</span>
+                            <span className="text-white/60">@</span>
+                            <span className="text-white/60">→</span>
+                            <span className="text-white">webfacelift.app</span>
+                          </div>
+                          <p className="text-[10px] text-amber-400/50">
+                            If your registrar doesn&apos;t support CNAME on root (@), use &quot;www&quot; as the host, or use an ALIAS/ANAME record.
+                          </p>
+                        </div>
+                        <button
+                          onClick={handleVerifyDomain}
+                          disabled={domainVerifying}
+                          className="mt-2.5 w-full px-3 py-1.5 text-[11px] font-medium text-amber-400 border border-amber-500/30 hover:bg-amber-500/10 rounded-lg transition-colors disabled:opacity-40 flex items-center justify-center gap-1.5"
+                        >
+                          {domainVerifying ? (
+                            <Loader2 size={11} className="animate-spin" />
+                          ) : (
+                            <Check size={11} />
+                          )}
+                          Verify Domain
+                        </button>
+                        {verifyMessage && (
+                          <p className="text-[10px] text-amber-400/60 mt-1.5">{verifyMessage}</p>
+                        )}
+                      </div>
+                    )}
+
+                    {domain && domainVerified && (
+                      <div className="flex items-center gap-1.5 text-[11px] text-green-400">
+                        <Check size={12} />
+                        Domain verified and active
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Divider */}
+                  <div className="border-t border-white/[0.06]" />
+
+                  {/* Contact Email */}
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-xs font-medium text-white flex items-center gap-1.5">
+                        <Mail size={12} />
+                        Contact Form Email
+                      </p>
+                      <p className="text-[11px] text-white/30 mt-0.5">
+                        Form submissions from your site will be sent here
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="email"
+                        placeholder="you@example.com"
+                        value={contactEmailValue}
+                        onChange={(e) => setContactEmailValue(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleSaveContactEmail()}
+                        className="flex-1 px-3 py-2 rounded-lg bg-zinc-800 border border-white/10 text-white text-sm placeholder:text-white/30 outline-none focus:border-indigo-500/50"
+                      />
+                      <button
+                        onClick={handleSaveContactEmail}
+                        disabled={contactEmailSaving || !contactEmailValue.trim()}
+                        className="px-3 py-2 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg transition-colors disabled:opacity-40"
+                      >
+                        {contactEmailSaving ? (
+                          <Loader2 size={12} className="animate-spin" />
+                        ) : (
+                          "Save"
+                        )}
+                      </button>
+                    </div>
+
+                    <p className="text-[10px] text-white/20">
+                      If not set, submissions go to your account email.
+                    </p>
+                  </div>
                 </>
               )}
             </div>
