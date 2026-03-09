@@ -221,6 +221,24 @@ export async function setContactEmail(
   return { success: true };
 }
 
+export async function getContactEmail(
+  projectId: string
+): Promise<{ success: boolean; email?: string | null; error?: string }> {
+  const user = await getAuthUser();
+  if (!user) return { success: false, error: "Unauthorized." };
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("projects")
+    .select("contact_email")
+    .eq("id", projectId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (error) return { success: false, error: error.message };
+  return { success: true, email: data?.contact_email ?? null };
+}
+
 // Look up a project by custom domain (used by middleware)
 export async function getProjectByDomain(
   domain: string
