@@ -61,6 +61,8 @@ interface ProjectStore {
   chatMessages: ChatMessage[];
   isGenerating: boolean;
   isChatLoading: boolean;
+  chatStatus: string;
+  chatIterationCount: number;
   generationStatus: string;
   viewportMode: "desktop" | "tablet" | "mobile";
   previewMode: "edit" | "preview";
@@ -84,6 +86,9 @@ interface ProjectStore {
   addChatMessage: (message: ChatMessage) => void;
   setIsGenerating: (loading: boolean) => void;
   setIsChatLoading: (loading: boolean) => void;
+  setChatStatus: (status: string) => void;
+  incrementChatIteration: () => void;
+  setChatIterationCount: (count: number) => void;
   setGenerationStatus: (status: string) => void;
   setViewportMode: (mode: "desktop" | "tablet" | "mobile") => void;
   setPreviewMode: (mode: "edit" | "preview") => void;
@@ -109,6 +114,8 @@ const initialState = {
   chatMessages: [],
   isGenerating: false,
   isChatLoading: false,
+  chatStatus: "",
+  chatIterationCount: 0,
   generationStatus: "",
   viewportMode: "desktop" as const,
   previewMode: "edit" as const,
@@ -174,6 +181,10 @@ export const useProjectStore = create<ProjectStore>((set) => ({
     set((s) => ({ chatMessages: [...s.chatMessages, message] })),
   setIsGenerating: (loading) => set({ isGenerating: loading }),
   setIsChatLoading: (loading) => set({ isChatLoading: loading }),
+  setChatStatus: (status) => set({ chatStatus: status }),
+  incrementChatIteration: () =>
+    set((s) => ({ chatIterationCount: s.chatIterationCount + 1 })),
+  setChatIterationCount: (count) => set({ chatIterationCount: count }),
   setGenerationStatus: (status) => set({ generationStatus: status }),
   setViewportMode: (mode) => set({ viewportMode: mode }),
   setPreviewMode: (mode) => set({ previewMode: mode }),

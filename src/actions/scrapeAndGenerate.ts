@@ -744,7 +744,13 @@ export async function scrapeAndGenerate(url: string): Promise<{
       const stage1Message = await anthropic.messages.create({
         model: "claude-sonnet-4-6",
         max_tokens: 12000,
-        system: CONTENT_ANALYSIS_SYSTEM_PROMPT,
+        system: [
+          {
+            type: "text" as const,
+            text: CONTENT_ANALYSIS_SYSTEM_PROMPT,
+            cache_control: { type: "ephemeral" as const },
+          },
+        ],
         messages: [{ role: "user", content: buildStage1Prompt(attempt.markdown, attempt.images, attempt.videos, attempt.colors, attempt.languages) }],
       });
 
@@ -809,7 +815,13 @@ ${geminiResult.guide}
     const { text: stage2RawText, stopReason } = await streamToText({
       model: "claude-opus-4-6",
       max_tokens: 32768,
-      system: CODE_GENERATION_SYSTEM_PROMPT,
+      system: [
+        {
+          type: "text" as const,
+          text: CODE_GENERATION_SYSTEM_PROMPT,
+          cache_control: { type: "ephemeral" as const },
+        },
+      ],
       messages: [
         {
           role: "user",

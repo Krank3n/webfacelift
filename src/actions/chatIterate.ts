@@ -1,7 +1,6 @@
 "use server";
 
-import { anthropic, streamToText, CHAT_ITERATE_SYSTEM_PROMPT, CODE_CHAT_ITERATE_SYSTEM_PROMPT } from "@/lib/anthropic";
-import { isCodeMode } from "@/lib/blueprint-utils";
+import { anthropic, CHAT_ITERATE_SYSTEM_PROMPT } from "@/lib/anthropic";
 import type { BlueprintState, ChatMessage } from "@/types/blueprint";
 
 interface ChatIterateResult {
@@ -11,6 +10,10 @@ interface ChatIterateResult {
   error?: string;
 }
 
+/**
+ * Block/niche mode chat iteration (server action).
+ * Code mode uses the streaming API route at /api/chat/iterate instead.
+ */
 export async function chatIterate(
   userPrompt: string,
   currentState: BlueprintState,
@@ -26,87 +29,6 @@ export async function chatIterate(
       content: m.content,
     }));
 
-  // ── Code mode iteration ──────────────────────────────────────────
-  if (isCodeMode(currentState)) {
-    try {
-      let systemAddendum = "";
-      if (uploadedImages && uploadedImages.length > 0) {
-        systemAddendum = `\n\nThe user has uploaded the following images that are available for use:\n${uploadedImages.map((url) => `- ${url}`).join("\n")}`;
-      }
-
-      // Build media catalog context if available
-      let mediaContext = "";
-      if (currentState.mediaCatalog && currentState.mediaCatalog.length > 0) {
-        const images = currentState.mediaCatalog.filter((m) => m.type === "image");
-        const videos = currentState.mediaCatalog.filter((m) => m.type === "video");
-        mediaContext = "\n\nAVAILABLE MEDIA FROM ORIGINAL WEBSITE:";
-        if (images.length > 0) {
-          mediaContext += `\n\nImages (${images.length}):`;
-          for (const img of images) {
-            mediaContext += `\n- ${img.url}${img.description ? ` (${img.description})` : ""}${img.recommendedPlacement ? ` [${img.recommendedPlacement}]` : ""}`;
-          }
-        }
-        if (videos.length > 0) {
-          mediaContext += `\n\nVideos (${videos.length}):`;
-          for (const vid of videos) {
-            mediaContext += `\n- ${vid.url}${vid.description ? ` (${vid.description})` : ""}${vid.recommendedPlacement ? ` [${vid.recommendedPlacement}]` : ""}`;
-          }
-        }
-      }
-
-      const { text: rawText } = await streamToText({
-        model: "claude-opus-4-6",
-        max_tokens: 32768,
-        system: CODE_CHAT_ITERATE_SYSTEM_PROMPT + systemAddendum,
-        messages: [
-          ...historyMessages,
-          {
-            role: "user",
-            content: `CURRENT WEBSITE CODE:
-\`\`\`tsx
-${currentState.code}
-\`\`\`
-${mediaContext}
-
-USER REQUEST: ${userPrompt}
-
-Apply the requested changes and return the response as JSON with "message" and "code" keys. Return ONLY the JSON object.`,
-          },
-        ],
-      });
-
-      if (!rawText) {
-        return { success: false, error: "No text response from AI." };
-      }
-
-      let jsonStr = rawText.trim();
-      if (jsonStr.startsWith("```")) {
-        jsonStr = jsonStr.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
-      }
-
-      const parsed = JSON.parse(jsonStr);
-
-      if (!parsed.code || typeof parsed.code !== "string") {
-        return { success: false, error: "Invalid response: missing code." };
-      }
-
-      return {
-        success: true,
-        message: parsed.message || "Changes applied.",
-        blueprint: {
-          ...currentState,
-          code: parsed.code,
-        },
-      };
-    } catch (err) {
-      return {
-        success: false,
-        error: `Chat iteration failed: ${err instanceof Error ? err.message : "Unknown error"}`,
-      };
-    }
-  }
-
-  // ── Block/niche mode iteration ───────────────────────────────────
   try {
     let systemAddendum = "";
     if (uploadedImages && uploadedImages.length > 0) {

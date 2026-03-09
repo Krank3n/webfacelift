@@ -126,8 +126,8 @@ export async function generatePage(
   if (existingBlueprint.mode === "code") {
     try {
       const { text: rawText } = await streamToText({
-        model: "claude-opus-4-6",
-        max_tokens: 32768,
+        model: "claude-sonnet-4-6",
+        max_tokens: 16384,
         system: CODE_PAGE_GENERATION_PROMPT,
         messages: [
           {

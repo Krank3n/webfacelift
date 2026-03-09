@@ -3,11 +3,12 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useProjectStore } from "@/store/project-store";
 import { syncDemoToSession } from "@/store/project-store";
-import { getBlueprintPages } from "@/lib/blueprint-utils";
+import { getBlueprintPages, isCodeMode } from "@/lib/blueprint-utils";
 import { chatIterate } from "@/actions/chatIterate";
 import { updateProjectState } from "@/actions/projects";
+import { MAX_CHAT_ITERATIONS } from "@/lib/credit-packs";
 import type { ChatMessage } from "@/types/blueprint";
-import { Send, Loader2, Bot, User, Sparkles, FileText, Eye } from "lucide-react";
+import { Send, Loader2, Bot, User, Sparkles, FileText, Eye, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 export default function ChatPanel() {
@@ -21,10 +22,17 @@ export default function ChatPanel() {
   const pushBlueprint = useProjectStore((s) => s.pushBlueprint);
   const isChatLoading = useProjectStore((s) => s.isChatLoading);
   const setIsChatLoading = useProjectStore((s) => s.setIsChatLoading);
+  const chatStatus = useProjectStore((s) => s.chatStatus);
+  const setChatStatus = useProjectStore((s) => s.setChatStatus);
+  const chatIterationCount = useProjectStore((s) => s.chatIterationCount);
+  const incrementChatIteration = useProjectStore((s) => s.incrementChatIteration);
   const uploadedImages = useProjectStore((s) => s.uploadedImages);
   const activePageId = useProjectStore((s) => s.activePageId);
   const permission = useProjectStore((s) => s.permission);
   const isViewer = permission === "viewer";
+
+  const isAtLimit = chatIterationCount >= MAX_CHAT_ITERATIONS;
+  const remainingIterations = MAX_CHAT_ITERATIONS - chatIterationCount;
 
   const activePageName = useMemo(() => {
     if (!blueprint) return "Home";
@@ -38,10 +46,85 @@ export default function ChatPanel() {
       top: scrollRef.current.scrollHeight,
       behavior: "smooth",
     });
-  }, [chatMessages]);
+  }, [chatMessages, chatStatus]);
+
+  async function handleCodeModeStream(
+    userMsg: ChatMessage,
+    allMessages: ChatMessage[]
+  ): Promise<{ success: boolean; message?: string; code?: string; error?: string }> {
+    const res = await fetch("/api/chat/iterate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userPrompt: userMsg.content,
+        currentState: blueprint,
+        chatHistory: allMessages,
+        uploadedImages: uploadedImages.length > 0 ? uploadedImages : undefined,
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: "Request failed" }));
+      return { success: false, error: err.error || "Request failed" };
+    }
+
+    const reader = res.body?.getReader();
+    if (!reader) return { success: false, error: "No response stream" };
+
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let result: { success: boolean; message?: string; code?: string; error?: string } = {
+      success: false,
+      error: "No response received",
+    };
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+
+      // Parse SSE events from buffer
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || ""; // Keep incomplete line
+
+      let eventType = "";
+      for (const line of lines) {
+        if (line.startsWith("event: ")) {
+          eventType = line.slice(7);
+        } else if (line.startsWith("data: ") && eventType) {
+          try {
+            const data = JSON.parse(line.slice(6));
+
+            if (eventType === "status") {
+              setChatStatus(data.text);
+            } else if (eventType === "done") {
+              result = {
+                success: true,
+                message: data.message,
+                code: data.code,
+              };
+            } else if (eventType === "error") {
+              result = { success: false, error: data.error };
+            }
+          } catch {
+            // Skip malformed JSON
+          }
+          eventType = "";
+        }
+      }
+    }
+
+    return result;
+  }
 
   async function handleSend() {
     if (!input.trim() || !blueprint || isChatLoading) return;
+
+    if (isAtLimit) {
+      toast.error(`Iteration limit reached (${MAX_CHAT_ITERATIONS} per project). Start a new generation to continue editing.`);
+      return;
+    }
 
     const userMsg: ChatMessage = {
       id: crypto.randomUUID(),
@@ -53,21 +136,51 @@ export default function ChatPanel() {
     addChatMessage(userMsg);
     setInput("");
     setIsChatLoading(true);
+    setChatStatus("Preparing...");
 
-    const result = await chatIterate(
-      userMsg.content,
-      blueprint,
-      [...chatMessages, userMsg],
-      uploadedImages.length > 0 ? uploadedImages : undefined
-    );
+    const allMessages = [...chatMessages, userMsg];
 
-    if (result.success && result.blueprint) {
-      pushBlueprint(result.blueprint);
+    let success = false;
+    let message = "";
+    let newBlueprint = blueprint;
+
+    if (isCodeMode(blueprint)) {
+      // Code mode: use streaming API route
+      const result = await handleCodeModeStream(userMsg, allMessages);
+      success = result.success;
+      message = result.message || "Changes applied.";
+
+      if (result.success && result.code) {
+        newBlueprint = { ...blueprint, code: result.code };
+      } else if (!result.success) {
+        message = result.error || "Unknown error";
+      }
+    } else {
+      // Block mode: use server action (already fast with Sonnet)
+      setChatStatus("Updating blueprint...");
+      const result = await chatIterate(
+        userMsg.content,
+        blueprint,
+        allMessages,
+        uploadedImages.length > 0 ? uploadedImages : undefined
+      );
+      success = result.success;
+      message = result.success
+        ? result.message || "Changes applied."
+        : result.error || "Unknown error";
+      if (result.success && result.blueprint) {
+        newBlueprint = result.blueprint;
+      }
+    }
+
+    if (success && newBlueprint !== blueprint) {
+      pushBlueprint(newBlueprint);
+      incrementChatIteration();
 
       const assistantMsg: ChatMessage = {
         id: crypto.randomUUID(),
         role: "assistant",
-        content: result.message || "Changes applied.",
+        content: message,
         timestamp: Date.now(),
       };
       addChatMessage(assistantMsg);
@@ -76,19 +189,19 @@ export default function ChatPanel() {
       if (projectId === "demo") {
         const state = useProjectStore.getState();
         syncDemoToSession({
-          blueprint: result.blueprint,
-          chatMessages: [...chatMessages, userMsg, assistantMsg],
+          blueprint: newBlueprint,
+          chatMessages: [...allMessages, assistantMsg],
           uploadedImages: state.uploadedImages,
           originalUrl: state.originalUrl,
         });
       } else if (projectId) {
-        updateProjectState(projectId, result.blueprint);
+        updateProjectState(projectId, newBlueprint);
       }
     } else {
       const errorMsg: ChatMessage = {
         id: crypto.randomUUID(),
         role: "assistant",
-        content: `Something went wrong: ${result.error || "Unknown error"}. Please try again.`,
+        content: `Something went wrong: ${message}. Please try again.`,
         timestamp: Date.now(),
       };
       addChatMessage(errorMsg);
@@ -96,6 +209,7 @@ export default function ChatPanel() {
     }
 
     setIsChatLoading(false);
+    setChatStatus("");
   }
 
   return (
@@ -162,7 +276,9 @@ export default function ChatPanel() {
             <div className="px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06]">
               <div className="flex items-center gap-2 text-xs text-white/40">
                 <Loader2 size={12} className="animate-spin text-indigo-400" />
-                Applying changes...
+                <span className="animate-pulse">
+                  {chatStatus || "Applying changes..."}
+                </span>
               </div>
             </div>
           </div>
@@ -178,30 +294,44 @@ export default function ChatPanel() {
           </div>
         ) : (
           <>
-            <div className="flex items-center gap-1.5 px-1 mb-1.5">
-              <FileText size={10} className="text-white/20" />
-              <span className="text-[11px] text-white/30">
-                Editing: <span className="text-white/50">{activePageName}</span>
-              </span>
+            <div className="flex items-center justify-between px-1 mb-1.5">
+              <div className="flex items-center gap-1.5">
+                <FileText size={10} className="text-white/20" />
+                <span className="text-[11px] text-white/30">
+                  Editing: <span className="text-white/50">{activePageName}</span>
+                </span>
+              </div>
+              {chatIterationCount > 0 && (
+                <span className={`text-[10px] ${remainingIterations <= 5 ? "text-amber-400/60" : "text-white/20"}`}>
+                  {remainingIterations} edits left
+                </span>
+              )}
             </div>
-            <div className="flex items-center gap-2 p-1 rounded-lg bg-zinc-900 border border-white/10 focus-within:border-indigo-500/50 transition-colors">
-              <input
-                type="text"
-                placeholder="Describe your changes..."
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
-                disabled={isChatLoading || !blueprint}
-                className="flex-1 bg-transparent text-white text-sm placeholder:text-white/30 outline-none px-2 py-1.5 disabled:opacity-50"
-              />
-              <button
-                onClick={handleSend}
-                disabled={isChatLoading || !input.trim() || !blueprint}
-                className="p-2 rounded-md bg-gradient-to-r from-indigo-600 to-violet-600 text-white disabled:opacity-30 hover:from-indigo-500 hover:to-violet-500 transition-all"
-              >
-                <Send size={14} />
-              </button>
-            </div>
+            {isAtLimit ? (
+              <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs">
+                <AlertTriangle size={14} className="shrink-0" />
+                <span>Edit limit reached ({MAX_CHAT_ITERATIONS} per project). Generate a new site to continue.</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 p-1 rounded-lg bg-zinc-900 border border-white/10 focus-within:border-indigo-500/50 transition-colors">
+                <input
+                  type="text"
+                  placeholder="Describe your changes..."
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
+                  disabled={isChatLoading || !blueprint}
+                  className="flex-1 bg-transparent text-white text-sm placeholder:text-white/30 outline-none px-2 py-1.5 disabled:opacity-50"
+                />
+                <button
+                  onClick={handleSend}
+                  disabled={isChatLoading || !input.trim() || !blueprint}
+                  className="p-2 rounded-md bg-gradient-to-r from-indigo-600 to-violet-600 text-white disabled:opacity-30 hover:from-indigo-500 hover:to-violet-500 transition-all"
+                >
+                  <Send size={14} />
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>
